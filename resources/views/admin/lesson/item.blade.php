@@ -1,0 +1,55 @@
+<div class="col-md-6">
+    <div class="card">
+        <div class="card-body">
+            <h3 class="card-title">All lessons</h3>
+            <table id="user-list-table" class="table table-striped table-bordered mt-1" role="grid"
+                aria-describedby="user-list-page-info">
+                <thead>
+                    <tr>
+                        <th>Title</th>
+                        <th>Type</th>
+                        <th width="5%">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach ($lessons as $lesson)
+                        <tr>
+                            <td>{{ $lesson->title }}</td>
+                            <td>{{ ucfirst($lesson->type) }}</td>
+                            <td>
+                                <div class="iq-card-header-toolbar d-flex align-items-center">
+                                    <div class="dropdown">
+                                        <span class="dropdown-toggle text-primary" id="dropdownMenuButton"
+                                            data-toggle="dropdown">
+                                            <a href="#" class="align-items-center"><i
+                                                    class="ri-more-fill"></i></a>
+                                        </span>
+                                        <div class="dropdown-menu dropdown-menu-right"
+                                            aria-labelledby="dropdownMenuButton">
+                                            <a class="dropdown-item" href="{{ route('chapters.lessons.words.create', $lesson->id) }}"><i
+                                                    class="ri-eye-fill mr-2"></i>Add Words</a>
+                                            <a class="dropdown-item" href="{{ route('lessons.show', $lesson->id) }}"><i
+                                                    class="ri-eye-fill mr-2"></i>Show</a>
+                                            <a class="dropdown-item" href="{{ route('lessons.edit', $lesson->id) }}"><i
+                                                    class="ri-eye-fill mr-2"></i>Edit</a>
+                                            <form action="{{ route('lessons.destroy', $lesson->id) }}" method="POST" style="display: inline;">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="dropdown-item" onclick="return confirm('Are you sure you want to delete this lesson?')">
+                                                    <i class="ri-delete-bin-fill mr-2"></i> Delete
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+            <div class="">
+                {{ $lessons->links() }}
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,115 @@
+<?php
+
+namespace App\Http\Controllers\SuperAdmin;
+
+use App\Http\Controllers\Controller;
+use App\Models\Chapter;
+use Illuminate\Http\Request;
+use App\Repositories\LessonRepositoryInterface;
+use App\Helpers\ApiResponse;
+use Illuminate\Http\Response;
+
+class LessonController extends Controller
+{
+   protected $lessonRepository;
+
+    public function __construct(LessonRepositoryInterface $lessonRepository) {
+        $this->lessonRepository = $lessonRepository;
+    }
+
+    /**
+     * Display a listing of the resource.
+     */
+    public function index()
+    {
+        $lessons = $this->lessonRepository->getAll();
+        return view('admin.lesson.index', compact('lessons'));
+    }
+
+    /**
+     * Show the form for creating a new resource.
+     */
+    public function create()
+    {
+        return view('admin.lesson.index');
+    }
+    /**
+     * Show the form for creating a new resource.
+     */
+    public function chapters_lessons_create($id)
+    {
+        $lessons = $this->lessonRepository->getAllById($id);
+        $clientType = get_client_type() ?? 'web';
+        if ($clientType === 'app') {
+            return ApiResponse::respond(['lessons' => $lessons], true, 'All lessons', Response::HTTP_OK);
+        }else{
+            return view('admin.lesson.index', compact('id', 'lessons'));
+        }
+    }
+
+    /**
+     * Store a newly created resource in storage.
+     */
+    public function store(Request $request)
+    {
+        $data = $request->except('_token');
+        $chapter = Chapter::find($data['chapter_id']);
+        $data['chapter_type'] = $chapter->type;
+        $this->lessonRepository->store($data);
+        return back();
+    }
+
+    /**
+     * Display the specified resource.
+     */
+    public function show(string $id)
+    {
+        $lesson = $this->lessonRepository->findById($id);
+        $clientType = get_client_type() ?? 'web';
+        if ($clientType === 'app') {
+            if ($lesson) {
+                return ApiResponse::respond(['lesson' => $lesson], true, 'Single lesson', Response::HTTP_OK);
+            }else{
+                return ApiResponse::respond(null, false, 'Lesson not found', Response::HTTP_NOT_FOUND);
+            }
+        }else{
+            $lessons = $this->lessonRepository->getAll();
+            return view('admin.lesson.show', compact('lessons', 'lesson'));
+        }
+    }
+
+    /**
+     * Show the form for editing the specified resource.
+     */
+    public function edit(string $id)
+    {
+        $lessons = $this->lessonRepository->getAll();
+        $lesson = $this->lessonRepository->findById($id);
+        return view('admin.lesson.edit', compact('lessons', 'lesson'));
+    }
+
+    /**
+     * Update the specified resource in storage.
+     */
+    public function update(Request $request, string $id)
+    {
+        $data = $request->except('_token');
+        $chapter = Chapter::find($data['chapter_id']);
+        $data['chapter_type'] = $chapter->type;
+        $this->lessonRepository->update($id, $data);
+        return back();
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     */
+    public function destroy(string $id)
+    {
+        $lesson = $this->lessonRepository->delete($id);
+        if ($lesson) {
+            return back()->with(['success', 'Lesson delete Succesfull.!']);
+        }else {
+            return back()->with(['error', 'Lesson not deleted.!']);
+        }
+    }
+}
