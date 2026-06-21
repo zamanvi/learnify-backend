@@ -9,7 +9,9 @@ RUN apt-get update && apt-get install -y \
     zip \
     unzip \
     && docker-php-ext-install pdo pdo_mysql mbstring xml zip gd bcmath \
-    && a2enmod rewrite
+    && a2enmod rewrite \
+    && a2dismod mpm_event || true \
+    && a2enmod mpm_prefork
 
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
@@ -26,8 +28,6 @@ RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cac
 
 COPY .docker/apache.conf /etc/apache2/sites-available/000-default.conf
 
-EXPOSE ${PORT:-80}
-
-CMD sed -i "s/80/${PORT:-80}/g" /etc/apache2/ports.conf /etc/apache2/sites-available/000-default.conf && \
+CMD sed -i "s/80/${PORT:-80}/g" /etc/apache2/ports.conf && \
     php artisan migrate --force; \
     apache2-foreground
