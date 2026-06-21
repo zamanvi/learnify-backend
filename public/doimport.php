@@ -9,54 +9,56 @@ $user = getenv('DB_USERNAME');
 $pass = getenv('DB_PASSWORD');
 
 try {
-    $pdo = new PDO("mysql:host=$host;port=$port;dbname=$db;charset=utf8mb4", $user, $pass, [
-        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-        PDO::MYSQL_ATTR_LOCAL_INFILE => true,
-    ]);
+    $pdo = new PDO("mysql:host=$host;port=$port;dbname=$db;charset=utf8mb4", $user, $pass);
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     $pdo->exec("SET FOREIGN_KEY_CHECKS=0");
     $pdo->exec("SET sql_mode=''");
+    $pdo->exec("SET NAMES utf8mb4");
 
-    $sql = file_get_contents(__DIR__ . '/db_full.sql');
-    
-    // Use proper SQL splitting that handles multi-line strings
-    $delimiter = ';';
+    $lines = file(__DIR__ . '/db_full.sql', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
     $buffer = '';
-    $inString = false;
-    $stringChar = '';
-    $escaped = false;
     $success = 0;
     $errors = [];
 
-    for ($i = 0; $i < strlen($sql); $i++) {
-        $char = $sql[$i];
+    foreach ($lines as $line) {
+        $line = trim($line);
+        if (empty($line) || str_starts_with($line, '--') || str_starts_with($line, '#') || str_starts_with($line, '/*')) continue;
         
-        if ($escaped) { $escaped = false; $buffer .= $char; continue; }
-        if ($char === '\\' && $inString) { $escaped = true; $buffer .= $char; continue; }
-        if (!$inString && ($char === '"' || $char === "'")) { $inString = true; $stringChar = $char; $buffer .= $char; continue; }
-        if ($inString && $char === $stringChar) { $inString = false; $buffer .= $char; continue; }
+        $buffer .= $line . "\n";
         
-        if (!$inString && $char === ';') {
+        if (str_ends_with($line, ';')) {
             $stmt = trim($buffer);
-            if (!empty($stmt) && !preg_match('/^(--|#|\/\*)/', $stmt)) {
+            if (!empty($stmt)) {
                 try {
                     $pdo->exec($stmt);
                     $success++;
                 } catch (Exception $e) {
-                    $errors[] = substr($e->getMessage(), 0, 100);
+                    $msg = $e->getMessage();
+                    // Skip "already exists" errors
+                    if (!str_contains($msg, 'already exists') && !str_contains($msg, 'Duplicate entry')) {
+                        $errors[] = substr($msg, 0, 150);
+                    }
                 }
             }
             $buffer = '';
-        } else {
-            $buffer .= $char;
         }
     }
 
     $pdo->exec("SET FOREIGN_KEY_CHECKS=1");
     
+    // Count rows
+    $tables = $pdo->query("SHOW TABLES")->fetchAll(PDO::FETCH_COLUMN);
+    $counts = [];
+    foreach ($tables as $t) {
+        $counts[$t] = $pdo->query("SELECT COUNT(*) FROM `$t`")->fetchColumn();
+    }
+
+    header('Content-Type: application/json');
     echo json_encode([
         'success' => $success,
         'errors_count' => count($errors),
-        'sample_errors' => array_slice($errors, 0, 5)
+        'errors' => array_slice($errors, 0, 10),
+        'table_counts' => $counts
     ]);
 } catch (Exception $e) {
     echo json_encode(['fatal' => $e->getMessage()]);
