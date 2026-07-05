@@ -1,6 +1,8 @@
 <?php
 
+use App\Http\Controllers\Api\v2\Game\BattleController;
 use App\Http\Controllers\Api\v2\Game\GameController;
+use App\Http\Controllers\Api\v2\Game\GroupController;
 use App\Http\Controllers\Api\v2\Game\LiptoController;
 use Illuminate\Support\Facades\Route;
 
@@ -25,6 +27,24 @@ Route::prefix('app')->middleware(['app'])->group(function () {
                 Route::post('/earn',     [LiptoController::class, 'earn']);
                 Route::post('/spend',    [LiptoController::class, 'spend']);
                 Route::post('/transfer', [LiptoController::class, 'transfer']);
+            });
+
+            // Group / Room
+            Route::prefix('group')->group(function () {
+                Route::post('/create',              [GroupController::class, 'create']);
+                Route::post('/join',                [GroupController::class, 'join']);
+                Route::get('/my',                   [GroupController::class, 'myGroups']);
+                Route::get('/{code}/leaderboard',   [GroupController::class, 'leaderboard']);
+                Route::delete('/{code}/leave',      [GroupController::class, 'leave']);
+            });
+
+            // Battle (async 1v1)
+            Route::prefix('battle')->group(function () {
+                Route::post('/challenge',  [BattleController::class, 'challenge']);
+                Route::get('/pending',     [BattleController::class, 'pending']);
+                Route::get('/history',     [BattleController::class, 'history']);
+                Route::get('/{id}',        [BattleController::class, 'show']);
+                Route::post('/{id}/submit',[BattleController::class, 'submit']);
             });
         });
     });
