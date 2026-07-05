@@ -8,15 +8,19 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-            $table->unsignedBigInteger('lipto_balance')->default(0)->after('streak_days');
-        });
+        if (!Schema::hasColumn('users', 'lipto_balance')) {
+            Schema::table('users', function (Blueprint $table) {
+                $table->unsignedBigInteger('lipto_balance')->default(0);
+            });
+        }
     }
 
     public function down(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-            $table->dropColumn('lipto_balance');
-        });
+        if (Schema::hasColumn('users', 'lipto_balance')) {
+            Schema::table('users', function (Blueprint $table) {
+                $table->dropColumn('lipto_balance');
+            });
+        }
     }
 };
