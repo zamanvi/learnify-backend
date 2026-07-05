@@ -17,7 +17,8 @@ return new class extends Migration
         if (!Schema::hasTable('lipto_transactions')) {
             Schema::create('lipto_transactions', function (Blueprint $table) {
                 $table->id();
-                $table->foreignId('user_id')->constrained()->onDelete('cascade');
+                $table->unsignedInteger('user_id');
+                $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
                 $table->bigInteger('amount');
                 $table->string('type', 30);
                 $table->string('source', 50)->nullable();
