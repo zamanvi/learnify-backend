@@ -111,6 +111,8 @@ class AuthController extends Controller
             'name' => $request['name'],
             'email' => $request['email'],
             'password' => Hash::make($request['password']),
+            'as_user' => 'student',
+            'status' => true,
             'date' => now()->toDateString(),
             'once' => 'no',
             'phone' => $request['phone'],
