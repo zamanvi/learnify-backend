@@ -24,7 +24,8 @@ class User extends Authenticatable
      *
      * @var array<int, string>
      */
-    protected $fillable = ['user_type', 'redrose_id', 'name', 'email', 'as_user', 'status', 'is_first', 'password', 'date', 'once', 'points', 'bio', 'designation', 'birthday', 'gender', 'about', 'phone', 'institute', 'address', 'upazila_id', 'city_id', 'division_id', 'country_id', 'company_name', 'whatsapp', 'facebook', 'twitter', 'instagram', 'linkedin', 'pinterest', 'tiktok', 'wechat', 'title', 'slug', 'title_description', 'expected_salary', 'period_class', 'duration', 'place_of_learning', 'through_of_learning', 'tuition_type', 'tuition_class', 'tuition_subject', 'tuition_time', 'medium', 'status_for_tuition', 'about_teacher', 'about_teaching', 'degree', 'year', 'institute', 'group_subject', 'result', 'degree_proof', 'area_country', 'area_division', 'area_city', 'area_upazila', 'area_post_office', 'area_union', 'area_village', 'area_road_house', 'update_status', 'remark', 'institution', 'class_department', 'roll', 'group_subject', 'about_student'];
+    protected $fillable = ['user_type', 'redrose_id', 'name', 'email', 'as_user', 'status', 'is_first', 'password', 'date', 'once', 'points', 'bio', 'designation', 'birthday', 'gender', 'about', 'phone', 'institute', 'address', 'upazila_id', 'city_id', 'division_id', 'country_id', 'company_name', 'whatsapp', 'facebook', 'twitter', 'instagram', 'linkedin', 'pinterest', 'tiktok', 'wechat', 'title', 'slug', 'title_description', 'expected_salary', 'period_class', 'duration', 'place_of_learning', 'through_of_learning', 'tuition_type', 'tuition_class', 'tuition_subject', 'tuition_time', 'medium', 'status_for_tuition', 'about_teacher', 'about_teaching', 'degree', 'year', 'institute', 'group_subject', 'result', 'degree_proof', 'area_country', 'area_division', 'area_city', 'area_upazila', 'area_post_office', 'area_union', 'area_village', 'area_road_house', 'update_status', 'remark', 'institution', 'class_department', 'roll', 'group_subject', 'about_student',
+        'lipto_balance'];
 
     /**
      * The attributes that should be hidden for serialization.
@@ -82,6 +83,11 @@ class User extends Authenticatable
     public function blog()
     {
         return $this->hasMany(Blog::class);
+    }
+
+    public function liptoTransactions()
+    {
+        return $this->hasMany(LiptoTransaction::class);
     }
 
 }
