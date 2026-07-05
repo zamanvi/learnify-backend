@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class Word extends Model
 {
     use HasFactory;
-    protected $fillable = ['word', 'meaning', 'synonyms', 'antonyms', 'lesson_id', 'status'];
+    protected $fillable = ['word', 'meaning', 'synonyms', 'antonyms', 'type', 'lesson_id', 'status'];
 
     protected $casts = ['status' => 'bool'];
 

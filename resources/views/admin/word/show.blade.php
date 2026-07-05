@@ -23,22 +23,22 @@
                             @method('PUT')
                             <input type="hidden" name="chapter_id" value="{{ $word->chapter_id }}">
                             <div class="form-group">
-                                <label for="word">{{ $lesson->chapter_type === 'verb' ? 'Verb 1' : 'Word' }}</label>
+                                <label for="word">{{ $lesson->type === 'verb' ? 'Verb 1' : 'Word' }}</label>
                                 <input readonly type="text" class="form-control" id="word"
                                     value="{{ $word->word }}">
                             </div>
                             <div class="form-group">
-                                <label for="meaning">{{ $lesson->chapter_type === 'verb' ? 'Verb ' : 'Word ' }} meaning</label>
+                                <label for="meaning">{{ $lesson->type === 'verb' ? 'Verb ' : 'Word ' }} meaning</label>
                                 <input readonly type="text" class="form-control" id="meaning"
                                     value="{{ $word->meaning }}">
                             </div>
                             <div class="form-group">
-                                <label for="synonyms">{{ $lesson->chapter_type === 'verb' ? 'Verb 2' : 'Word synonyms' }} </label>
+                                <label for="synonyms">{{ $lesson->type === 'verb' ? 'Verb 2' : 'Word synonyms' }} </label>
                                 <input readonly type="text" class="form-control" id="synonyms"
                                     value="{{ $word->synonyms }}">
                             </div>
                             <div class="form-group">
-                                <label for="antonyms">{{ $lesson->chapter_type === 'verb' ? 'Verb 1' : 'Word antonyms' }} </label>
+                                <label for="antonyms">{{ $lesson->type === 'verb' ? 'Verb 3' : 'Word antonyms' }} </label>
                                 <input readonly type="text" class="form-control" id="antonyms"
                                     value="{{ $word->antonyms }}">
                             </div>

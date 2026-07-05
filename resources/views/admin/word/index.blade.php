@@ -22,24 +22,24 @@
                             @csrf
                             <input type="hidden" name="lesson_id" value="{{ $lesson->id }}">
                             <div class="form-group">
-                                <label for="word">{{ $lesson->chapter_type === 'verb' ? 'Verb 1' : 'Word' }}</label>
+                                <label for="word">{{ $lesson->type === 'verb' ? 'Verb 1' : 'Word' }}</label>
                                 <input required type="text" name="word" class="form-control" id="word"
-                                    placeholder="{{ $lesson->chapter_type === 'verb' ? 'Verb 1' : 'Word' }}">
+                                    placeholder="{{ $lesson->type === 'verb' ? 'Verb 1' : 'Word' }}">
                             </div>
                             <div class="form-group">
-                                <label for="meaning">{{ $lesson->chapter_type === 'verb' ? 'Verb ' : 'Word ' }} meaning</label>
+                                <label for="meaning">{{ $lesson->type === 'verb' ? 'Verb ' : 'Word ' }} meaning</label>
                                 <input type="text" name="meaning" class="form-control" id="meaning"
-                                    placeholder="{{ $lesson->chapter_type === 'verb' ? 'Verb ' : 'Word ' }} meaning">
+                                    placeholder="{{ $lesson->type === 'verb' ? 'Verb ' : 'Word ' }} meaning">
                             </div>
                             <div class="form-group">
-                                <label for="synonyms">{{ $lesson->chapter_type === 'verb' ? 'Verb 2' : 'Word synonyms' }}</label>
+                                <label for="synonyms">{{ $lesson->type === 'verb' ? 'Verb 2' : 'Word synonyms' }}</label>
                                 <input type="text" name="synonyms" class="form-control" id="synonyms"
-                                    placeholder="{{ $lesson->chapter_type === 'verb' ? 'Verb 2' : 'Word synonyms' }} ">
+                                    placeholder="{{ $lesson->type === 'verb' ? 'Verb 2' : 'Word synonyms' }} ">
                             </div>
                             <div class="form-group">
-                                <label for="antonyms">{{ $lesson->chapter_type === 'verb' ? 'Verb 3' : 'Word antonyms' }}</label>
+                                <label for="antonyms">{{ $lesson->type === 'verb' ? 'Verb 3' : 'Word antonyms' }}</label>
                                 <input type="text" name="antonyms" class="form-control" id="antonyms"
-                                    placeholder="{{ $lesson->chapter_type === 'verb' ? 'Verb 3' : 'Word antonyms' }}">
+                                    placeholder="{{ $lesson->type === 'verb' ? 'Verb 3' : 'Word antonyms' }}">
                             </div>
                            <div class="form-group">
                                 <label for="type">Word Type</label>
