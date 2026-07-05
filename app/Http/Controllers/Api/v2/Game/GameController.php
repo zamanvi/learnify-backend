@@ -10,39 +10,48 @@ use Illuminate\Support\Facades\Auth;
 
 class GameController extends Controller
 {
-    // GET /api/app/game/daily-word
+    // GET /api/game/daily-word
     public function daily_word()
     {
         $word = Word::where('status', 1)->inRandomOrder()->first();
 
         if (!$word) {
-            return response()->json(['success' => false, 'message' => 'No word found'], 404);
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'No word found',
+            ], 404);
         }
 
         return response()->json([
-            'success' => true,
-            'data' => [
-                'id'       => $word->id,
-                'word'     => $word->word,
-                'meaning'  => $word->meaning,
-                'synonyms' => $word->synonyms,
-                'antonyms' => $word->antonyms,
-                'type'     => $word->type,
-            ]
+            'status' => 'success',
+            'data'   => [
+                'id'        => $word->id,
+                'word'      => $word->word,
+                'meaning'   => $word->meaning,
+                'synonyms'  => $word->synonyms,
+                'antonyms'  => $word->antonyms,
+                'type'      => $word->type,
+                'lesson_id' => $word->lesson_id,
+            ],
         ]);
     }
 
-    // GET /api/app/game/quiz/{lesson_id}
-    public function quiz($lesson_id)
+    // GET /api/game/quiz/{lesson_id}?count=10
+    public function quiz($lesson_id, Request $request)
     {
+        $count = min((int) $request->query('count', 10), 20);
+
         $words = Word::where('lesson_id', $lesson_id)
             ->where('status', 1)
             ->inRandomOrder()
-            ->limit(10)
+            ->limit($count)
             ->get();
 
         if ($words->isEmpty()) {
-            return response()->json(['success' => false, 'message' => 'No words found for this lesson'], 404);
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'No words found for this lesson',
+            ], 404);
         }
 
         $allMeanings = Word::where('status', 1)
@@ -57,26 +66,28 @@ class GameController extends Controller
             while (count($wrongOptions) < 3) {
                 $wrongOptions[] = 'N/A';
             }
+
             $options = array_merge([$word->meaning], $wrongOptions);
             shuffle($options);
 
+            $correctIndex = array_search($word->meaning, $options);
+
             return [
-                'word'          => $word->word,
-                'correct'       => $word->meaning,
-                'options'       => $options,
-                'synonyms'      => $word->synonyms,
-                'antonyms'      => $word->antonyms,
+                'question'      => $word->word,
+                'correct_index' => $correctIndex,
+                'options'       => array_values($options),
+                'explanation'   => $word->synonyms ?? '',
             ];
         });
 
         return response()->json([
-            'success' => true,
-            'data'    => $questions
+            'status' => 'success',
+            'data'   => $questions,
         ]);
     }
 
-    // POST /api/app/game/xp  (auth required)
-    // Body: { score: int, total: int }
+    // POST /api/game/xp  (auth required)
+    // Body: { score: int, total: int, lesson_id: int }
     public function add_xp(Request $request)
     {
         $request->validate([
@@ -84,20 +95,25 @@ class GameController extends Controller
             'total' => 'required|integer|min:1',
         ]);
 
-        $user = Auth::user();
+        $user   = Auth::user();
         $earned = (int) round(($request->score / $request->total) * 10);
         $user->increment('points', $earned);
 
+        $fresh     = $user->fresh();
+        $totalXp   = $fresh->points;
+        $rank      = User::where('points', '>', $totalXp)->count() + 1;
+
         return response()->json([
-            'success' => true,
-            'data' => [
-                'earned' => $earned,
-                'total_points' => $user->fresh()->points,
-            ]
+            'status' => 'success',
+            'data'   => [
+                'earned'       => $earned,
+                'total_xp'     => $totalXp,
+                'rank'         => $rank,
+            ],
         ]);
     }
 
-    // GET /api/app/game/leaderboard  (public)
+    // GET /api/game/leaderboard
     public function leaderboard()
     {
         $users = User::select('id', 'name', 'points')
@@ -106,6 +122,7 @@ class GameController extends Controller
             ->get()
             ->map(function ($u, $index) {
                 return [
+                    'id'     => $u->id,
                     'rank'   => $index + 1,
                     'name'   => $u->name,
                     'points' => $u->points,
@@ -113,36 +130,43 @@ class GameController extends Controller
             });
 
         return response()->json([
-            'success' => true,
-            'data'    => $users
+            'status' => 'success',
+            'data'   => $users,
         ]);
     }
 
-    // GET /api/app/game/streak  (auth required)
+    // GET /api/game/streak  (auth required)
     public function streak()
     {
-        $user = Auth::user();
+        $user    = Auth::user();
+        $totalXp = $user->points ?? 0;
+        $rank    = User::where('points', '>', $totalXp)->count() + 1;
 
         return response()->json([
-            'success' => true,
-            'data' => [
+            'status' => 'success',
+            'data'   => [
                 'streak_days' => $user->streak_days ?? 0,
                 'last_played' => $user->last_played_at ?? null,
-            ]
+                'total_xp'    => $totalXp,
+                'rank'        => $rank,
+            ],
         ]);
     }
 
-    // POST /api/app/game/streak/update  (auth required)
+    // POST /api/game/streak/update  (auth required)
     public function update_streak(Request $request)
     {
-        $user = Auth::user();
-        $today = now()->toDateString();
+        $user       = Auth::user();
+        $today      = now()->toDateString();
         $lastPlayed = optional($user->last_played_at)->toDateString();
 
         if ($lastPlayed === $today) {
             return response()->json([
-                'success' => true,
-                'data' => ['streak_days' => $user->streak_days ?? 0, 'message' => 'already_updated']
+                'status' => 'success',
+                'data'   => [
+                    'streak_days' => $user->streak_days ?? 0,
+                    'message'     => 'already_updated',
+                ],
             ]);
         }
 
@@ -155,8 +179,10 @@ class GameController extends Controller
         ]);
 
         return response()->json([
-            'success' => true,
-            'data' => ['streak_days' => $newStreak]
+            'status' => 'success',
+            'data'   => [
+                'streak_days' => $newStreak,
+            ],
         ]);
     }
 }
