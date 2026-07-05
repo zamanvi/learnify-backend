@@ -20,7 +20,7 @@ Route::prefix('app')->middleware(['app'])->group(function () {
     Route::post('/forget-password', [AuthController::class, 'forget_password']);
     Route::post('/confirm-password', [AuthController::class, 'confirm_password_verify']);
     // Route::post('/forget-password', [AuthController::class, 'forget_password']);
-    Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified'])->group(function () {
+    Route::middleware(['auth:sanctum', config('jetstream.auth_session')])->group(function () {
         Route::get('logout', [AuthController::class, 'logout']);
         Route::get('refresh-token', [AuthController::class, 'refreshToken']);
     });
