@@ -7,7 +7,6 @@ use App\Models\LiptoTransaction;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 
 class LiptoController extends Controller
 {
@@ -16,21 +15,15 @@ class LiptoController extends Controller
     {
         $user = $request->user();
 
-        $recent = [];
-        try {
-            $recent = LiptoTransaction::where('user_id', $user->id)
-                ->orderByDesc('created_at')
-                ->limit(20)
-                ->get(['id', 'amount', 'type', 'source', 'description', 'balance_after', 'created_at']);
-        } catch (\Exception $e) {
-            // table may not exist yet
-        }
+        $recent = LiptoTransaction::where('user_id', $user->id)
+            ->orderByDesc('created_at')
+            ->limit(20)
+            ->get(['id', 'amount', 'type', 'source', 'description', 'balance_after', 'created_at']);
 
         return response()->json([
             'status'  => 'success',
             'balance' => (int) $user->lipto_balance,
             'recent'  => $recent,
-            'debug'   => Schema::hasTable('lipto_transactions') ? 'table_ok' : 'table_missing',
         ]);
     }
 
