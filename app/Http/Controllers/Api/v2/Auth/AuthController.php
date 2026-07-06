@@ -96,29 +96,25 @@ class AuthController extends Controller
     public function register(Request $request)
     {
         $request->validate([
-            'name' => ['required', 'string', 'max:255'],
+            'name'     => ['required', 'string', 'max:255'],
+            'email'    => ['required', 'string', 'email', 'max:255', 'unique:users'],
             'password' => ['required', 'min:6', 'confirmed'],
         ]);
-
-        // Auto-generate a unique internal email
-        do {
-            $email = Str::slug($request->name) . rand(1000, 9999) . '@learnify.app';
-        } while (User::where('email', $email)->exists());
 
         $redrose_id = Str::slug($request->name) . rand(100, 99999);
 
         $user = User::create([
             'user_type' => '2',
             'redrose_id' => $redrose_id,
-            'name' => $request['name'],
-            'email' => $email,
-            'password' => Hash::make($request['password']),
-            'as_user' => 'student',
-            'status' => true,
-            'date' => now()->toDateString(),
-            'once' => 'no',
-            'phone' => '01000000000',
-            'points' => '10',
+            'name'      => $request['name'],
+            'email'     => $request['email'],
+            'password'  => Hash::make($request['password']),
+            'as_user'   => 'student',
+            'status'    => true,
+            'date'      => now()->toDateString(),
+            'once'      => 'no',
+            'phone'     => '01000000000',
+            'points'    => '10',
         ]);
         if ($user) {
             Friend::create([
@@ -148,58 +144,37 @@ class AuthController extends Controller
         }
     }
 
-    function forget_password(Request $request)
+    public function forget_password(Request $request)
     {
-        $data = [
-            'email' => $request->input('email'),
-        ];
-        $roules = [
-            'email' => 'required',
+        $request->validate(['email' => 'required|email']);
+
+        $email = $request->input('email');
+        $user  = User::where('email', $email)->first();
+
+        if (!$user) {
+            return $this->apiResponse('', false, 'এই email-এ কোনো অ্যাকাউন্ট নেই।', AppResponse::HTTP_NOT_FOUND);
+        }
+
+        $random  = rand(100000, 999999);
+        $content = [
+            'subject' => 'Master English Book — Password Reset OTP',
+            'name'    => $user->name,
+            'otp'     => $random,
         ];
 
-        if ($this->request_validator($data, $roules)) {
-            return $this->apiresponse('', false, 'Make sure you need to fill all the required parametter.', AppResponse::HTTP_NOT_ACCEPTABLE);
-        } else {
-            if (filter_var($request->input('email'), FILTER_VALIDATE_EMAIL)) {
-                $email = $request->input('email');
-                $is_email = User::where('email', $email)->first();
-                if ($is_email) {
-                    $old_otp = Otp::where('email', $email)->first();
-                    if ($old_otp != null) {
-                        $random = rand(100000, 999999);
-                        $content = [
-                            'subject' => 'Forget Password OPT',
-                            'name' => $email,
-                            'otp' => $random,
-                        ];
-                        try {
-                            Mail::to($email)->send(new ForgotPasswordMail($content));
-                            Otp::updateStore($email, $random, $old_otp->id);
-                            return $this->apiresponse(['email' => $email], true, 'An OTP has been changed and resend it your Email, Please check your mail box, (if need check spam flder)...!', AppResponse::HTTP_ALREADY_REPORTED);
-                        } catch (\Exception $e) {
-                            return $this->apiresponse('', false, $e->getMessage(), AppResponse::HTTP_NOT_ACCEPTABLE);
-                        }
-                    } else {
-                        $random = rand(100000, 999999);
-                        $content = [
-                            'subject' => 'Forget Password OPT',
-                            'name' => $email,
-                            'otp' => $random,
-                        ];
-                        try {
-                            Mail::to($email)->send(new ForgotPasswordMail($content));
-                            Otp::createStore($email, $random);
-                            return $this->apiresponse(['email' => $email], true, 'An OTP has been send your Email, Please check your mail box, (if need check spam flder)...!', AppResponse::HTTP_OK);
-                        } catch (\Exception $e) {
-                            return $this->apiresponse('', false, $e->getMessage(), AppResponse::HTTP_NOT_ACCEPTABLE);
-                        }
-                    }
-                } else {
-                    return $this->apiresponse('', false, 'Not found any account with this email, Please try again with Correct email address...!', AppResponse::HTTP_NOT_FOUND);
-                }
+        try {
+            Mail::to($email)->send(new ForgotPasswordMail($content));
+
+            $old = Otp::where('email', $email)->first();
+            if ($old) {
+                Otp::updateStore($email, $random, $old->id);
             } else {
-                return $this->apiresponse('', false, 'Make sure you need to input your valid email address or phone numbre.', AppResponse::HTTP_NOT_ACCEPTABLE);
+                Otp::createStore($email, $random);
             }
+
+            return $this->apiResponse(['email' => $email], true, 'OTP পাঠানো হয়েছে। Email চেক করো।', AppResponse::HTTP_OK);
+        } catch (\Exception $e) {
+            return $this->apiResponse('', false, 'Email পাঠাতে ব্যর্থ: ' . $e->getMessage(), AppResponse::HTTP_NOT_ACCEPTABLE);
         }
     }
     function confirm_password_verify(Request $request)
