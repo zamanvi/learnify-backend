@@ -12,7 +12,11 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule): void
     {
-        // $schedule->command('inspire')->hourly();
+        // সকাল ৭:৩০ — daily word notification (Bangladesh = UTC+6, so 01:30 UTC)
+        $schedule->command('notify:morning-word')->dailyAt('01:30');
+
+        // রাত ৮:০০ — streak reminder (Bangladesh = UTC+6, so 14:00 UTC)
+        $schedule->command('notify:evening-streak')->dailyAt('14:00');
     }
 
     /**

@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\v2\Game\BattleController;
 use App\Http\Controllers\Api\v2\Game\GameController;
 use App\Http\Controllers\Api\v2\Game\GroupController;
 use App\Http\Controllers\Api\v2\Game\LiptoController;
+use App\Http\Controllers\Api\v2\Game\NotificationController;
 use Illuminate\Support\Facades\Route;
 
 // Public game routes - use grammer middleware (x-api-key: app)
@@ -36,6 +37,12 @@ Route::prefix('app')->middleware(['app'])->group(function () {
                 Route::get('/my',                   [GroupController::class, 'myGroups']);
                 Route::get('/{code}/leaderboard',   [GroupController::class, 'leaderboard']);
                 Route::delete('/{code}/leave',      [GroupController::class, 'leave']);
+            });
+
+            // Notifications
+            Route::prefix('notification')->group(function () {
+                Route::post('/token', [NotificationController::class, 'saveToken']);
+                Route::post('/test',  [NotificationController::class, 'test']);
             });
 
             // Battle (async 1v1)

@@ -16,6 +16,21 @@ class FcmService
         $this->serviceAccount = json_decode(file_get_contents(asset('firebase/masterenglish-f1c79.json')), true);
     }
 
+    public function sendToDevice(string $token, string $title, string $body, array $data = []): bool
+    {
+        $accessToken = $this->getAccessToken();
+        $payload = [
+            'message' => [
+                'token' => $token,
+                'data'  => array_merge(['title' => $title, 'body' => $body], $data),
+            ],
+        ];
+        $response = Http::withToken($accessToken)
+            ->post("https://fcm.googleapis.com/v1/projects/{$this->projectId}/messages:send", $payload);
+        Log::debug('FCM sendToDevice', ['token' => substr($token, 0, 20), 'response' => $response->body()]);
+        return $response->successful();
+    }
+
     public function sendToTopic(string $topic, string $title, string $body, array $data = []): bool
     {
         $accessToken = $this->getAccessToken();

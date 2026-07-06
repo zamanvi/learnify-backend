@@ -7,6 +7,7 @@ use App\Models\Battle;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use App\Services\FcmService;
 
 class BattleController extends Controller
 {
@@ -48,11 +49,24 @@ class BattleController extends Controller
             'status'        => 'pending',
         ]);
 
+        // Push notification to opponent
+        $opponent = User::find($opponentId);
+        if ($opponent && $opponent->device_token) {
+            try {
+                (new FcmService())->sendToDevice(
+                    $opponent->device_token,
+                    "⚔️ চ্যালেঞ্জ পেয়েছো!",
+                    "{$challenger->name} তোমাকে 1v1 battle এ ডেকেছে!",
+                    ['type' => 'battle', 'battle_id' => (string) $battle->id]
+                );
+            } catch (\Exception $e) { /* non-critical */ }
+        }
+
         return response()->json([
             'status'    => 'success',
             'battle_id' => $battle->id,
             'lesson_id' => $battle->lesson_id,
-            'opponent'  => $this->formatUser(User::find($opponentId)),
+            'opponent'  => $this->formatUser($opponent),
         ]);
     }
 
