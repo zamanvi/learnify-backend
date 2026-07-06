@@ -13,7 +13,10 @@ class FcmService
     public function __construct()
     {
         $this->projectId = config('firebase.project_id');
-        $this->serviceAccount = json_decode(file_get_contents(asset('firebase/masterenglish-f1c79.json')), true);
+        $this->serviceAccount = json_decode(file_get_contents(public_path('firebase/masterenglish-f1c79.json')), true);
+        if ($this->serviceAccount === null) {
+            throw new \RuntimeException('Firebase service account file not found.');
+        }
     }
 
     public function sendToDevice(string $token, string $title, string $body, array $data = []): bool

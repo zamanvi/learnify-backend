@@ -1,0 +1,10 @@
+[build]
+builder = "nixpacks"
+
+[[services]]
+name = "web"
+startCommand = "php artisan migrate --force && vendor/bin/heroku-php-apache2 public/"
+
+[[services]]
+name = "worker"
+startCommand = "php artisan schedule:work"

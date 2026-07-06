@@ -26,9 +26,12 @@ class SendEveningStreakReminder extends Command
         ];
         $msg = $messages[date('N') % count($messages)]; // rotate by weekday
 
-        // Only send to users whose last activity is NOT today
-        // (We don't track this on backend yet — send to all for now)
+        // Only send to users who have NOT played today
         User::whereNotNull('device_token')
+            ->where(function ($q) use ($today) {
+                $q->whereNull('last_played_at')
+                  ->orWhereDate('last_played_at', '<', $today);
+            })
             ->select('device_token')
             ->chunk(100, function ($users) use ($fcm, $msg, &$count) {
                 foreach ($users as $user) {
@@ -43,6 +46,14 @@ class SendEveningStreakReminder extends Command
                     } catch (\Exception $e) { /* skip */ }
                 }
             });
+
+        \App\Models\NotificationLog::create([
+            'type'             => 'streak_reminder',
+            'title'            => 'ইংরেজি শিখছ তুমি 🔥',
+            'body'             => $msg,
+            'recipients_count' => $count,
+            'sent_at'          => now(),
+        ]);
 
         $this->info("Evening streak reminder sent to {$count} users.");
     }

@@ -83,6 +83,12 @@
                             <span>Support</span>
                         </a>
                     </li>
+                    <li class="@if (Route::is('notification.logs')) active @endif">
+                        <a href="{{ route('notification.logs') }}" class="iq-waves-effect collapsed"><i
+                                class="lab la-elementor"></i>
+                            <span>📬 Notification Logs</span>
+                        </a>
+                    </li>
                     <li>
                         <a href="/clear-cash" class="iq-waves-effect collapsed"><i
                                 class="ri-record-circle-line iq-arrow-left"></i>

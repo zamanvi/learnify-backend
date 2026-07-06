@@ -14,6 +14,7 @@ use App\Http\Controllers\SuperAdmin\LessonController;
 use App\Http\Controllers\SuperAdmin\NoticeController;
 use App\Http\Controllers\SuperAdmin\SAdminController;
 use App\Http\Controllers\SuperAdmin\WordController;
+use App\Http\Controllers\SuperAdmin\NotificationLogController;
 
 /*
 |--------------------------------------------------------------------------
@@ -237,6 +238,7 @@ Route::middleware(['auth:sanctum',config('jetstream.auth_session'),'verified'])-
     Route::post('/class', [PageController::class, 'class']);
     Route::post('/class', [PageController::class, 'class']);
 
+    Route::get('notification-logs', [NotificationLogController::class, 'index'])->name('notification.logs');
     Route::get('/notification', [HomeController::class, 'all_notification']);
     Route::put('/notification/{id}', [HomeController::class, 'read_notification']);
     Route::get('/supportlist', [HomeController::class, 'supportlist']);

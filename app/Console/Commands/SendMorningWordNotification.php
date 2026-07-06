@@ -36,6 +36,14 @@ class SendMorningWordNotification extends Command
                 }
             });
 
+        \App\Models\NotificationLog::create([
+            'type'             => 'morning_word',
+            'title'            => "📚 আজকের Word: {$wordText}",
+            'body'             => 'প্রতিদিন একটু একটু শেখো। আজকের quiz বাকি! 🔥',
+            'recipients_count' => $count,
+            'sent_at'          => now(),
+        ]);
+
         $this->info("Morning word notification sent to {$count} users.");
     }
 }
