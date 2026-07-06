@@ -32,7 +32,14 @@
                                 @foreach ($bookChapters as $bookChapter)
                                     <tr>
                                         <td>{{ $bookChapter->title }}</td>
-                                        <td>{{ $bookChapter->type }}</td>
+                                        <td>
+                                            <select class="form-control form-control-sm chapter-type-select" data-id="{{ $bookChapter->id }}" style="min-width:140px;">
+                                                <option value="web"              @selected($bookChapter->type == 'web')>Web</option>
+                                                <option value="grammar"          @selected($bookChapter->type == 'grammar')>Grammar</option>
+                                                <option value="daily_vocabulary" @selected($bookChapter->type == 'daily_vocabulary')>Speaking</option>
+                                                <option value="writing_reading"  @selected($bookChapter->type == 'writing_reading')>Writing</option>
+                                            </select>
+                                        </td>
                                         <td>{{ $bookChapter->pageview }}</td>
                                         <td>
                                             <div class="iq-card-header-toolbar d-flex align-items-center">
@@ -106,3 +113,30 @@
         </div>
     </div>
 @endsection
+@push('scripts')
+<script>
+document.querySelectorAll('.chapter-type-select').forEach(function(select) {
+    select.addEventListener('change', function() {
+        var id   = this.dataset.id;
+        var type = this.value;
+        var sel  = this;
+        sel.disabled = true;
+        fetch('{{ url("chapter/update-type") }}/' + id, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify({ type: type })
+        })
+        .then(r => r.json())
+        .then(data => {
+            sel.disabled = false;
+            sel.style.background = data.success ? '#d4edda' : '#f8d7da';
+            setTimeout(() => sel.style.background = '', 1500);
+        })
+        .catch(() => { sel.disabled = false; sel.style.background = '#f8d7da'; });
+    });
+});
+</script>
+@endpush

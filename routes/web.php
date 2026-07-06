@@ -136,6 +136,7 @@ Route::middleware(['auth:sanctum',config('jetstream.auth_session'),'verified'])-
             Route::get('edit/{slug}', [BookController::class, 'chapter_edit'])->name('chapter.edit');
             Route::put('update/{id}', [BookController::class, 'chapter_update'])->name('chapter.update');
             Route::get('delete/{id}', [BookController::class, 'chapter_delete'])->name('chapter.delete');
+            Route::post('update-type/{id}', [BookController::class, 'chapter_update_type'])->name('chapter.update.type');
         });
 
         Route::prefix('item')->group(function () {

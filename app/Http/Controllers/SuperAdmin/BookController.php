@@ -79,6 +79,12 @@ class BookController extends Controller
             return back()->with('warning', 'Error check all data again and submit again...!');
         }
     }
+    public function chapter_update_type(Request $request, $id)
+    {
+        $updated = BookChapter::where('id', $id)->update(['type' => $request->input('type')]);
+        return response()->json(['success' => (bool) $updated]);
+    }
+
     public function chapter_delete($id)
     {
         $bookItems = BookItem::where('chapter_id', $id)->get();
