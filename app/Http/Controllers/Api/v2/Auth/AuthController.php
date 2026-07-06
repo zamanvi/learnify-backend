@@ -66,56 +66,58 @@ class AuthController extends Controller
     public function login(Request $request)
     {
         $request->validate([
-            'email' => 'required',
+            'name' => 'required',
             'password' => 'required',
         ]);
-        if (filter_var($request->email, FILTER_VALIDATE_EMAIL)) {
-            $user = User::where('email', $request->email)->first();
-            if ($user && Hash::check($request->password, $user->password)) {
-                Notification::create([
-                    'user_id' => $user->id,
-                    'name' => $user->name . ' Login by email.!',
-                    'date' => now()->toDateString(),
-                    'time' => now()->toTimeString(),
-                    'type' => 'login',
-                    'status' => '1',
-                ]);
-                return $this->apiResponse(
-                    [
-                        'user' => $user,
-                        'token' => $user->createToken('API Token of ' . $user->name)->plainTextToken,
-                    ],
-                    true,
-                    'You have successfully logged in.!',
-                    AppResponse::HTTP_OK,
-                );
-            } else {
-                return $this->apiResponse('', false, 'Credentials does not match', AppResponse::HTTP_UNAUTHORIZED);
-            }
+
+        $user = User::whereRaw('LOWER(name) = ?', [strtolower($request->name)])->first();
+        if ($user && Hash::check($request->password, $user->password)) {
+            Notification::create([
+                'user_id' => $user->id,
+                'name' => $user->name . ' Login by name.!',
+                'date' => now()->toDateString(),
+                'time' => now()->toTimeString(),
+                'type' => 'login',
+                'status' => '1',
+            ]);
+            return $this->apiResponse(
+                [
+                    'user' => $user,
+                    'token' => $user->createToken('API Token of ' . $user->name)->plainTextToken,
+                ],
+                true,
+                'You have successfully logged in.!',
+                AppResponse::HTTP_OK,
+            );
         }
+        return $this->apiResponse('', false, 'নাম বা পাসওয়ার্ড ভুল', AppResponse::HTTP_UNAUTHORIZED);
     }
     // Register function start
     public function register(Request $request)
     {
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
-            'password' => 'required',
-            'password_confirmation' => 'required',
-            // 'terms' => Jetstream::hasTermsAndPrivacyPolicyFeature() ? ['accepted', 'required'] : '',
+            'password' => ['required', 'min:6', 'confirmed'],
         ]);
-        $redrose_id = str_replace(' ', '', Str::lower($request['name']) . rand(100, 99999));
+
+        // Auto-generate a unique internal email
+        do {
+            $email = Str::slug($request->name) . rand(1000, 9999) . '@learnify.app';
+        } while (User::where('email', $email)->exists());
+
+        $redrose_id = Str::slug($request->name) . rand(100, 99999);
+
         $user = User::create([
             'user_type' => '2',
             'redrose_id' => $redrose_id,
             'name' => $request['name'],
-            'email' => $request['email'],
+            'email' => $email,
             'password' => Hash::make($request['password']),
             'as_user' => 'student',
             'status' => true,
             'date' => now()->toDateString(),
             'once' => 'no',
-            'phone' => $request['phone'],
+            'phone' => '01000000000',
             'points' => '10',
         ]);
         if ($user) {
@@ -126,7 +128,7 @@ class AuthController extends Controller
             ]);
             Notification::create([
                 'user_id' => $user->id,
-                'name' => $request['name'] . ' User Create from web successful.!',
+                'name' => $request['name'] . ' User Create from app successful.!',
                 'date' => now()->toDateString(),
                 'time' => now()->toTimeString(),
                 'type' => 'user',
@@ -138,11 +140,11 @@ class AuthController extends Controller
                     'token' => $user->createToken('API Token of ' . $user->name)->plainTextToken,
                 ],
                 true,
-                'Congratulation, you have successfully created your account. Thank you for choosing RedRose Academy.!',
+                'Account created successfully.',
                 AppResponse::HTTP_CREATED,
             );
         } else {
-            return $this->apiResponse('', false, "User can't Create.!", 401);
+            return $this->apiResponse('', false, "Could not create account.", 401);
         }
     }
 
