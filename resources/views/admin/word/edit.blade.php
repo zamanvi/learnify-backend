@@ -17,37 +17,33 @@
             <div class="col-md-6">
                 <div class="card">
                     <div class="card-body">
-                        <h3 class="card-title">Edit word</h3>
+                        <h3 class="card-title">Edit Word</h3>
+                        <p class="text-muted small">
+                            For <strong>Verb</strong>: Word = V1, Synonyms = V2, Antonyms = V3<br>
+                            For <strong>Vocabulary</strong>: Word, Meaning, Synonyms, Antonyms
+                        </p>
                         <form method="POST" action="{{ route('words.update', $word->id) }}">
                             @csrf
                             @method('PUT')
                             <div class="form-group">
-                                <label for="word">{{ $lesson->type === 'verb' ? 'Verb 1' : 'Word' }}</label>
+                                <label for="word">Word / V1</label>
                                 <input required type="text" name="word" class="form-control" id="word"
                                     value="{{ $word->word }}">
                             </div>
                             <div class="form-group">
-                                <label for="meaning">{{ $lesson->type === 'verb' ? 'Verb ' : 'Word ' }} meaning</label>
+                                <label for="meaning">Meaning</label>
                                 <input type="text" name="meaning" class="form-control" id="meaning"
-                                value="{{ $word->meaning }}">
+                                    value="{{ $word->meaning }}">
                             </div>
                             <div class="form-group">
-                                <label for="synonyms">{{ $lesson->type === 'verb' ? 'Verb 2' : 'Word synonyms' }} </label>
+                                <label for="synonyms">Synonyms / V2</label>
                                 <input type="text" name="synonyms" class="form-control" id="synonyms"
-                                value="{{ $word->synonyms }}">
+                                    value="{{ $word->synonyms }}">
                             </div>
                             <div class="form-group">
-                                <label for="antonyms">{{ $lesson->type === 'verb' ? 'Verb 3' : 'Word antonyms' }} </label>
+                                <label for="antonyms">Antonyms / V3</label>
                                 <input type="text" name="antonyms" class="form-control" id="antonyms"
-                                value="{{ $word->antonyms }}">
-                            </div>
-                           <div class="form-group">
-                                <label for="type">Word Type</label>
-                                <select name="type" id="type" required class="form-control">
-                                    <option @selected($word->type === 'vocabulary') value="vocabulary">Vocabulary</option>
-                                    <option @selected($word->type === 'grammar') value="grammar">Grammar</option>
-                                    <option @selected($word->type === 'both') value="both">Both</option>
-                                </select>
+                                    value="{{ $word->antonyms }}">
                             </div>
                             <input type="submit" class="btn btn-primary" value="Update" />
                             <input type="reset" class="btn iq-bg-danger" value="Cancel" />
