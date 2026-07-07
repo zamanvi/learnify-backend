@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\v2\Utility\ApiShahidController;
 use App\Http\Controllers\Api\v2\Utility\ApiUtilityController;
+use App\Models\Word;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -14,6 +15,11 @@ use Illuminate\Support\Facades\Route;
 | be assigned to the "api" middleware group. Make something great!
 |
 */
+
+// TEMP export — delete after use
+Route::get('/tmp-words-export-x9k2', function () {
+    return response()->json(Word::select('id', 'word', 'meaning', 'synonyms', 'antonyms')->orderBy('id')->get());
+});
 
 Route::prefix('app')->middleware(['app'])->group(function () {
 
