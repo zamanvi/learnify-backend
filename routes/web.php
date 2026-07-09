@@ -46,8 +46,6 @@ Route::middleware(['auth:sanctum',config('jetstream.auth_session'),'verified'])-
         }
     })->name('dashboard');
 
-    // require __DIR__.'/contest.php';
-
     // Superadmin & admin start
     Route::get('superadmin/slug', [SAdminController::class, 'superadmin_slug']);
     Route::get('/clear-cash', [HomeController::class, 'clear_cash']);
@@ -235,7 +233,6 @@ Route::middleware(['auth:sanctum',config('jetstream.auth_session'),'verified'])-
     Route::delete('/upazila/delete/{id}', [PageController::class, 'upazila_delete'])->name('upazila.delete');
 
     Route::get('/allclass', [PageController::class, 'allclass']);
-    Route::post('/class', [PageController::class, 'class']);
     Route::post('/class', [PageController::class, 'class']);
 
     Route::get('notification-logs', [NotificationLogController::class, 'index'])->name('notification.logs');

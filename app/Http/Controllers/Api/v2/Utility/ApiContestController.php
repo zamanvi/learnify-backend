@@ -142,10 +142,12 @@ class ApiContestController extends Controller
                 $answers = json_decode($inputString, true);
                 $right = 0;
                 $wrong = 0;
+                $questionIds = collect($answers)->pluck('q')->all();
+                $correctAnswers = ContestQuestion::whereIn('id', $questionIds)->pluck('option5', 'id');
                 foreach ($answers as $k => $ans) {
                     $question_id = $ans['q'];
                     $optopn = $ans['o'];
-                    if ($this->getCurrectAns($question_id, $optopn)) {
+                    if (($correctAnswers[$question_id] ?? null) == $optopn) {
                         $right++;
                     } else {
                         $wrong++;

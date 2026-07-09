@@ -24,30 +24,6 @@ class ApiScholarshipController extends Controller
             ]);
         return $this->apiResponse(['scholarShips' => $scholarShips], true, $message, AppResponse::HTTP_OK);
     }
-    function scholarship_active(Request $request) {
-        $perPage = $request->input('per_page', 10);
-        $status = $request->input('per_page', true);
-        $is_publish = !$status;
-        $scholarShips = ScholarShip::validForEnrollment($status, $is_publish)
-            ->paginate($perPage, [
-                'title', 'price', 'enroll_limit', 'winner_limit', 'date', 'time',
-                'slug', 'short_description', 'description', 'image_path', 'sponsor',
-                'sponsor_image_path', 'pageview', 'status'
-            ]);
-        return $this->apiResponse(['scholarShips' => $scholarShips], true, 'All active scholarships read successful.!', AppResponse::HTTP_OK);
-    }
-    function scholarship_inactive(Request $request) {
-        $perPage = $request->input('per_page', 10);
-        $status = false;
-        $is_publish = true;
-        $scholarShips = ScholarShip::validForEnrollment($status, $is_publish)
-            ->paginate($perPage, [
-                'title', 'price', 'enroll_limit', 'winner_limit', 'date', 'time',
-                'slug', 'short_description', 'description', 'image_path', 'sponsor',
-                'sponsor_image_path', 'pageview', 'status'
-            ]);
-        return $this->apiResponse(['scholarShips' => $scholarShips], true, 'All active scholarships read successful.!', AppResponse::HTTP_OK);
-    }
     function scholarship_show($slug) {
         $scholarShip = ScholarShip::where('slug', $slug)->first();
         if ($scholarShip) {

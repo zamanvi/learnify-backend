@@ -5,10 +5,8 @@ use App\Models\ModelQuestion;
 use App\Models\ModelSyllabus;
 use App\Models\ModelTestAll;
 use App\Models\ModelTestResult;
-use App\Models\User;
 use App\Traits\HttpWebResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Auth;
 class ModelTestController extends Controller
 {
@@ -195,13 +193,5 @@ class ModelTestController extends Controller
         $modeltestQuestion->delete();
         $this->notification(Auth::user()->id, '"' . Auth::user()->name . '" delete Modeltest Question "' . $modeltestQuestion->name . '" successfully.!',  'modelquestion', '1');
         return back()->with('success', 'Model test syllabus created successfull.!');
-    }
-
-    public function model_result($id)
-    {
-        $modeltestresult = ModelTestResult::where('modeltest_id', $id)
-            ->where('user_id', Auth::user()->id)
-            ->get();
-
     }
 }

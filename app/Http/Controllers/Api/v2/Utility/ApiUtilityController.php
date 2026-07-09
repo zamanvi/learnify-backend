@@ -38,18 +38,6 @@ class ApiUtilityController extends Controller
 
         return $this->apiResponse(['blogs' => $blogs], true, 'All Blog read successful.', AppResponse::HTTP_OK);
     }
-    public function blog_item($id)
-    {
-        $blog = Blog::select('id', 'user_id', 'name', 'image_path', 'short_description', 'description', 'keyword', 'pageview')
-            ->where('id', $id)
-            ->first();
-        if (!$blog) {
-            return $this->apiResponse([], false, 'Blog not found.', AppResponse::HTTP_NOT_FOUND);
-        }
-        $blog->pageview = $blog->pageview + 1;
-        $blog->save();
-        return $this->apiResponse(['blog' => $blog], true, 'Blog read successful.', AppResponse::HTTP_OK);
-    }
     public function blog_item_slug($slug)
     {
         $blog = Blog::select('id', 'slug', 'user_id', 'name', 'image_path', 'short_description', 'description', 'keyword', 'pageview')

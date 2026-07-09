@@ -6,7 +6,6 @@ use App\Models\Shahid;
 use App\Traits\HttpWebResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Storage;
 
 class ShahidController extends Controller
 {

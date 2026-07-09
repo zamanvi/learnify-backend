@@ -2,17 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\AllClass;
-use App\Models\City;
-use App\Models\Country;
-use App\Models\Division;
-use App\Models\User;
 use App\Models\Notification;
 use App\Models\Support;
 use App\Models\SupportReplay;
-use App\Models\Upazila;
 use App\Traits\HttpWebResponse;
-use DateTime;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Artisan;

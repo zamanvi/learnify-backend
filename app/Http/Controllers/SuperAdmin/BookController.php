@@ -87,10 +87,7 @@ class BookController extends Controller
 
     public function chapter_delete($id)
     {
-        $bookItems = BookItem::where('chapter_id', $id)->get();
-        foreach ($bookItems as $bookItem) {
-            $bookItem->delete();
-        }
+        BookItem::where('chapter_id', $id)->delete();
         BookChapter::find($id)->delete();
         return redirect(route('book.index'))->with('success', 'Post deleted successfull...!');
     }

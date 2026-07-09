@@ -1,6 +1,5 @@
 <?php
 
-use App\Http\Controllers\Api\v1\ApiController\ApiController;
 use App\Http\Controllers\Api\v2\Utility\ApiProfileController;
 use Illuminate\Support\Facades\Route;
 

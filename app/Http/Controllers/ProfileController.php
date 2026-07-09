@@ -7,10 +7,8 @@ use App\Models\Message;
 use App\Traits\HttpWebResponse;
 use App\Models\Friend;
 use App\Models\User;
-use App\Models\Notification;
 use App\Models\ReceiveRequest;
 use App\Models\SendRequest;
-use App\Models\Upazila;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 

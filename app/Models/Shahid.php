@@ -78,7 +78,6 @@ class Shahid extends Model
             foreach ($request->file('gallery_path') as $file) {
                 $gallery_paths[] = upload_file($file);
             }
-            // dd($gallery_paths);
         }
         $shahid->gallery_path = !empty($gallery_paths) ? json_encode($gallery_paths) : '';
 

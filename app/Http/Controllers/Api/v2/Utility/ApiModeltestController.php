@@ -107,10 +107,13 @@ class ApiModeltestController extends Controller
             $modeltest = ModelTestAll::find($id);
             $right = 0;
             $wrong = 0;
-            foreach ($request->input('ans') as $k => $ans) {
+            $answers = $request->input('ans');
+            $questionIds = collect($answers)->map(fn ($ans) => Str::substr($ans, 0, 1))->all();
+            $correctAnswers = ModelQuestion::whereIn('id', $questionIds)->pluck('option5', 'id');
+            foreach ($answers as $k => $ans) {
                 $question_id = Str::substr($ans, 0, 1);
                 $optopn = Str::substr($ans, 2, 1);
-                if ($this->getCurrectAnsResult($question_id, $optopn)) {
+                if (($correctAnswers[$question_id] ?? null) == $optopn) {
                     $right++;
                 } else {
                     $wrong++;

@@ -1,7 +1,6 @@
 <?php
 namespace App\Traits;
 
-use App\Models\Blog;
 use App\Models\Friend;
 use App\Models\History;
 use App\Models\Message;
@@ -12,24 +11,6 @@ use App\Models\User;
 
 trait HttpWebResponse
 {
-    protected function success($data, $message = null, $code)
-    {
-        return response()->json([
-            'status' => true,
-            'code' => $code,
-            'message' => $message,
-            'data' => $data,
-        ]);
-    }
-    protected function error($data, $message = null, $code)
-    {
-        return response()->json([
-            'status' => false,
-            'code' => $code,
-            'message' => $message,
-            'data' => $data,
-        ]);
-    }
     protected function notification($user_id, $name, $type, $status)
     {
         Notification::create([
@@ -96,12 +77,6 @@ trait HttpWebResponse
             'w_ans' => $w_ans,
             'total_mark' => $total_mark,
             'neg_mark' => $neg_mark,
-        ]);
-    }
-    protected function blog_pageview_update($id, $pageview)
-    {
-        Blog::where('id', $id)->update([
-            'pageview' => $pageview,
         ]);
     }
 }

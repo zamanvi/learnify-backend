@@ -180,14 +180,6 @@ class SAdminController extends Controller
             'modeltestresultlist' => $modeltestresultlist,
         ]);
     }
-    public function ublog_index()
-    {
-        $bloglist = Blog::get();
-        return view('frontend.pages.blog', [
-            'bloglist' => $bloglist
-        ]);
-    }
-
     public function blog_create()
     {
         $bloglist = Blog::paginate(20);

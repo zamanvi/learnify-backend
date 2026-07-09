@@ -1,12 +1,9 @@
 <?php
 namespace App\Traits;
 
-use App\Models\Chat;
-use App\Models\ContestQuestion;
 use App\Models\Friend;
 use App\Models\History;
 use App\Models\Message;
-use App\Models\ModelQuestion;
 use App\Models\ModelTestResult;
 use App\Models\Notification;
 use App\Models\Result;
@@ -65,19 +62,6 @@ trait HttpAppResponse
             'friend_id' => $id,
             'type' => $type,
         ]);
-    }
-    protected function make_message()
-    {
-        return $this->apiResponse(
-            [
-                'chats' => Chat::where('user_id', Auth::user()->id)
-                    ->orwhere('receiver_id', Auth::user()->id)
-                    ->get(),
-            ],
-            true,
-            'Message send successful.!',
-            200,
-        );
     }
     protected function message($chat_id, $message, $sender_id, $receiver_id, $seen, $type)
     {
@@ -138,24 +122,6 @@ trait HttpAppResponse
             'give_ans' => $give_ans,
             'not_give_ans' => $not_give_ans,
         ]);
-    }
-    function getCurrectAns($question_id, $optopn): bool
-    {
-        $contestQuestion = ContestQuestion::find($question_id);
-        if ($contestQuestion->option5 == $optopn) {
-            return true;
-        } else {
-            return false;
-        }
-    }
-    function getCurrectAnsResult($question_id, $optopn): bool
-    {
-        $question = ModelQuestion::find($question_id);
-        if ($question->option5 == $optopn) {
-            return true;
-        } else {
-            return false;
-        }
     }
 }
 

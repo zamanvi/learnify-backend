@@ -26,16 +26,6 @@ Route::prefix('app')->middleware(['app'])->group(function () {
             Route::get('send', [ApiSocailController::class, 'sendFriend']);
             Route::get('received', [ApiSocailController::class, 'receivedFriend']);
         });
-        Route::prefix('chat')->group(function () {
-            Route::get('list', [ApiMessageController::class, 'chatList']);
-            Route::post('make-message/{id}', [ApiMessageController::class, 'makeMessage']);
-            Route::get('message/{id}', [ApiMessageController::class, 'chatMessage']);
-            Route::post('send-message/{id}', [ApiMessageController::class, 'sendChatMessage']);
-            Route::post('edit-message/{chat_id}/{message_id}', [ApiMessageController::class, 'editChatMessage']);
-            Route::get('unsend-message/{chat_id}/{message_id}', [ApiMessageController::class, 'unsendChatMessage']);
-            Route::get('remove-message/{chat_id}/{message_id}', [ApiMessageController::class, 'removeChatMessage']);
-            Route::delete('delete-message/{chat_id}/{message_id}', [ApiMessageController::class, 'deleteChatMessage']);
-        });
         Route::prefix('message')->group(function () {
             Route::get('list', [ApiMessageController::class, 'messageList']);
             Route::post('make/{id}', [ApiMessageController::class, 'makeMessage']);

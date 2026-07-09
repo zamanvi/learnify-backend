@@ -22,13 +22,10 @@ class RedirectIfAuthenticated
         foreach ($guards as $guard) {
             if (Auth::guard($guard)->check()) {
                 if (Auth::user()->user_type == 1) {
-                    // dd(Auth::user()->user_type . 'superadmin');
                     return redirect(RouteServiceProvider::SUPER_ADMIN);
                 }elseif (Auth::user()->user_type == 2) {
-                    // dd(Auth::user()->user_type . 'admin');
                     return redirect(RouteServiceProvider::ADMIN);
                 }else {
-                    // dd(Auth::user()->user_type . 'user');
                     return redirect(RouteServiceProvider::HOME);
                 }
             }

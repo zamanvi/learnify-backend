@@ -253,40 +253,4 @@ class PageController extends Controller
             'classlist' => $classlist,
         ]);
     }
-    public function class_store(Request $request)
-    {
-        $request->validate([
-            'name' => 'required',
-        ]);
-        AllClass::create([
-            'name' => $request->input('name'),
-        ]);
-        $this->notification(Auth::user()->id, '"' . Auth::user()->name . '" create class "' . $request->input('name') . '".!',  'class', '1');
-        return back()->with('success', 'Class created successfull.!');
-    }
-    public function class_edit($id)
-    {
-        $classlist = AllClass::paginate(25);
-        $class = AllClass::find($id);
-        return view('admin.class.edit', [
-            'classlist' => $classlist,
-            'class' => $class,
-        ]);
-    }
-    public function class_update(Request $request, $id)
-    {
-
-        AllClass::where('id', $id)->update([
-            'name' => $request->input('name'),
-        ]);
-        $this->notification(Auth::user()->id, '"' . Auth::user()->name . '" update class "' . $request->input('name') . '".!',  'class', '1');
-        return back()->with('success', 'Class update successfull.!');
-    }
-    public function class_delete($id)
-    {
-        $allclass = AllClass::find($id);
-        $allclass->delete();
-        $this->notification(Auth::user()->id, '"' . Auth::user()->name . '" delete class "' . $allclass->name . '".!',  'class', '1');
-        return redirect('/allclass')->with('success', 'Class delete successfull.!');
-    }
 }

@@ -1,7 +1,5 @@
 <?php
 
-use App\Http\Controllers\Api\v1\ApiController\ApiController;
-use App\Http\Controllers\Api\v2\Utility\ApiEventController;
 use App\Http\Controllers\Api\v2\Utility\ApiModeltestController;
 use Illuminate\Support\Facades\Route;
 
