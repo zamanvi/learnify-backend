@@ -29,12 +29,6 @@ class RouteServiceProvider extends ServiceProvider
         });
         $this->routes(function () {
             Route::prefix('api/v2')->middleware('api')->namespace($this->namespace . '\Api\v2')->group(base_path('routes/api/auth.php'));
-            Route::prefix('api/v2')->middleware('api')->namespace($this->namespace . '\Api\v2')->group(base_path('routes/api/utility.php'));
-            Route::prefix('api/v2')->middleware('api')->namespace($this->namespace . '\Api\v2')->group(base_path('routes/api/contest.php'));
-            Route::prefix('api/v2')->middleware('api')->namespace($this->namespace . '\Api\v2')->group(base_path('routes/api/scholarship.php'));
-            Route::prefix('api/v2')->middleware('api')->namespace($this->namespace . '\Api\v2')->group(base_path('routes/api/modeltest.php'));
-            Route::prefix('api/v2')->middleware('api')->namespace($this->namespace . '\Api\v2')->group(base_path('routes/api/profile.php'));
-            Route::prefix('api/v2')->middleware('api')->namespace($this->namespace . '\Api\v2')->group(base_path('routes/api/social.php'));
             Route::prefix('api/v2')->middleware('api')->namespace($this->namespace . '\Api\v2')->group(base_path('routes/api/book.php'));
             Route::middleware('api')->prefix('api')->group(base_path('routes/api/game.php'));
             Route::middleware('api')->prefix('api')->group(base_path('routes/api.php'));
