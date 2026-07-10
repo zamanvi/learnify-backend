@@ -15,6 +15,7 @@ use App\Http\Controllers\SuperAdmin\NoticeController;
 use App\Http\Controllers\SuperAdmin\SAdminController;
 use App\Http\Controllers\SuperAdmin\WordController;
 use App\Http\Controllers\SuperAdmin\NotificationLogController;
+use App\Http\Controllers\SuperAdmin\WizardController;
 
 /*
 |--------------------------------------------------------------------------
@@ -148,6 +149,21 @@ Route::middleware(['auth:sanctum',config('jetstream.auth_session'),'verified'])-
             Route::put('update/{id}', [BookController::class, 'item_update'])->name('item.update');
             Route::get('delete/{id}', [BookController::class, 'item_delete'])->name('item.delete');
         });
+    });
+
+    // Wizard (odd-true-stories) Panel Super Admin
+    Route::prefix('wizard')->group(function () {
+        Route::get('chapters', [WizardController::class, 'chapter_index'])->name('wizard.chapter.index');
+        Route::post('chapter/store', [WizardController::class, 'chapter_store'])->name('wizard.chapter.store');
+        Route::get('chapter/edit/{id}', [WizardController::class, 'chapter_edit'])->name('wizard.chapter.edit');
+        Route::put('chapter/update/{id}', [WizardController::class, 'chapter_update'])->name('wizard.chapter.update');
+        Route::get('chapter/delete/{id}', [WizardController::class, 'chapter_delete'])->name('wizard.chapter.delete');
+
+        Route::get('stories/{chapter}', [WizardController::class, 'story_index'])->name('wizard.story.index');
+        Route::post('story/store', [WizardController::class, 'story_store'])->name('wizard.story.store');
+        Route::get('story/edit/{id}', [WizardController::class, 'story_edit'])->name('wizard.story.edit');
+        Route::put('story/update/{id}', [WizardController::class, 'story_update'])->name('wizard.story.update');
+        Route::get('story/delete/{id}', [WizardController::class, 'story_delete'])->name('wizard.story.delete');
     });
 
     // contest

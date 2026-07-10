@@ -27,6 +27,7 @@
                     <li><a href="{{ route('contest.index') }}"><i class="lab la-elementor"></i>Contest Management</a></li>
                     <li><a href="{{ route('modeltest.index') }}"><i class="lab la-elementor"></i>Modeltest Management</a></li>
                     <li><a href="{{ route('book.index') }}"><i class="lab la-elementor"></i>Book Management</a></li>
+                    <li><a href="{{ route('wizard.chapter.index') }}"><i class="lab la-elementor"></i>Wizard Management</a></li>
                     <li class="@if (Route::is(['alluser',])) active @endif">
                         <a href="#alluser" class="iq-waves-effect collapsed" data-toggle="collapse"
                             aria-expanded="false"><i class="ri-home-4-line"></i><span>User Management</span><i
