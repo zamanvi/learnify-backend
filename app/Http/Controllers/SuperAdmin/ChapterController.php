@@ -29,10 +29,10 @@ class ChapterController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
         $clientType = get_client_type() ?? 'web';
-        $chapters = $this->chapterRepository->getAll();
+        $chapters = $this->chapterRepository->getAll($request->query('type'));
         if ($clientType === 'app') {
             return ApiResponse::respond(['chapters' => $chapters], true, 'All chapters', Response::HTTP_OK);
         }else{
