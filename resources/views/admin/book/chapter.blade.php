@@ -36,7 +36,7 @@
                                             <select class="form-control form-control-sm chapter-type-select" data-id="{{ $bookChapter->id }}" style="min-width:140px;">
                                                 <option value="web"              @selected($bookChapter->type == 'web')>Web</option>
                                                 <option value="grammar"          @selected($bookChapter->type == 'grammar')>Grammar</option>
-                                                <option value="daily_vocabulary" @selected($bookChapter->type == 'daily_vocabulary')>Speaking</option>
+                                                <option value="daily_vocabulary" @selected($bookChapter->type == 'daily_vocabulary')>Daily Vocabulary</option>
                                                 <option value="writing_reading"  @selected($bookChapter->type == 'writing_reading')>Writing</option>
                                             </select>
                                         </td>
@@ -69,7 +69,7 @@
                             </tbody>
                         </table>
                         <div class="">
-                            {{ $bookChapters->links() }}
+                            {{ $bookChapters->appends(request()->query())->links() }}
                         </div>
                     </div>
                 </div>
@@ -93,10 +93,10 @@
                             <div class="form-group">
                                 <label for="type">Chapter Type</label>
                                 <select name="type" id="type" class="form-control">
-                                    <option value="web">Web</option>
-                                    <option value="grammar">Grammar</option>
-                                    <option value="daily_vocabulary">Daily Vocabulary</option>
-                                    <option value="writing_reading">Writing & Reading</option>
+                                    <option value="web" @selected(request('type') == 'web')>Web</option>
+                                    <option value="grammar" @selected(request('type') == 'grammar')>Grammar</option>
+                                    <option value="daily_vocabulary" @selected(request('type') == 'daily_vocabulary')>Daily Vocabulary</option>
+                                    <option value="writing_reading" @selected(request('type') == 'writing_reading')>Writing & Reading</option>
                                 </select>
                             </div>
                             <div class="form-group">

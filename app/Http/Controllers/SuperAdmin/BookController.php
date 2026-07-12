@@ -46,10 +46,26 @@ class BookController extends Controller
         }
     }
 
-    public function chapter_index($slug)
+    /**
+     * Unified "Sections" picker shown after selecting a Book and before
+     * Chapter management. Vocabulary/Wizard live outside the Book schema
+     * entirely (separate tables/admin screens), so their cards link out to
+     * those existing management screens; Grammar/Reading & Writing/Daily
+     * Vocabulary stay inside this Book's own chapters, filtered by type.
+     */
+    public function book_sections($slug)
     {
         $book = Book::where('slug', $slug)->first();
-        $bookChapters = BookChapter::latest()->where('book_id', $book->id)->paginate(10);
+        return view('admin.book.sections', compact('book'));
+    }
+
+    public function chapter_index(Request $request, $slug)
+    {
+        $book = Book::where('slug', $slug)->first();
+        $bookChapters = BookChapter::latest()
+            ->where('book_id', $book->id)
+            ->when($request->has('type'), fn($q) => $q->where('type', $request->type))
+            ->paginate(10);
         return view('admin.book.chapter', compact('bookChapters', 'book'));
     }
 

@@ -45,9 +45,8 @@
                                                         aria-labelledby="dropdownMenuButton5">
                                                         <a class="dropdown-item" href="{{ route('book.edit', $book->slug) }}"><i
                                                                 class="ri-eye-fill mr-2"></i>Edit</a>
-                                                        {{-- <a class="dropdown-item" href="{{ route('chapter.index', ['slug' => $book->slug,'id'=> $book->id]) }}"> --}}
-                                                        <a class="dropdown-item" href="{{ route('chapter.index', $book->slug) }}">
-                                                            <i class="ri-eye-fill mr-2"></i>Chapter</a>
+                                                        <a class="dropdown-item" href="{{ route('book.sections', $book->slug) }}">
+                                                            <i class="ri-eye-fill mr-2"></i>Sections</a>
                                                     </div>
                                                 </div>
                                             </div>

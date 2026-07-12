@@ -87,6 +87,8 @@ Route::middleware(['auth:sanctum',config('jetstream.auth_session'),'verified'])-
         Route::put('update/{id}', [BookController::class, 'book_update'])->name('book.update');
         // Route::delete('delete/{id}', [BookController::class, 'book_delete'])->name('book.delete');
 
+        Route::get('sections/{slug}', [BookController::class, 'book_sections'])->name('book.sections');
+
         Route::prefix('chapter')->group(function () {
             Route::get('create/{slug}', [BookController::class, 'chapter_index'])->name('chapter.index');
             Route::post('store', [BookController::class, 'chapter_store'])->name('chapter.store');
