@@ -1,4 +1,4 @@
-FROM php:8.2-apache
+FROM php:8.2-cli
 
 RUN apt-get update && apt-get install -y \
     libpng-dev \
@@ -8,8 +8,7 @@ RUN apt-get update && apt-get install -y \
     curl \
     zip \
     unzip \
-    && docker-php-ext-install pdo pdo_mysql mbstring xml zip gd bcmath \
-    && a2enmod rewrite
+    && docker-php-ext-install pdo pdo_mysql mbstring xml zip gd bcmath
 
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
@@ -24,18 +23,6 @@ RUN cp .env.example .env && \
 
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
 
-# Point Apache's DocumentRoot at Laravel's public/ directory and allow
-# .htaccess to actually take effect (Laravel's public/.htaccess needs
-# mod_rewrite + AllowOverride All to route everything through index.php).
-RUN sed -ri -e 's!/var/www/html!/var/www/html/public!g' /etc/apache2/sites-available/*.conf \
-    && printf '<Directory /var/www/html/public>\n    AllowOverride All\n</Directory>\n' > /etc/apache2/conf-available/laravel.conf \
-    && a2enconf laravel
-
 EXPOSE 8080
 
-# Railway assigns $PORT at runtime, so the listen port has to be patched
-# in at container start rather than baked in at build time.
-CMD php artisan migrate --force; \
-    sed -i "s/Listen 80/Listen ${PORT:-8080}/" /etc/apache2/ports.conf; \
-    sed -i "s/:80>/:${PORT:-8080}>/" /etc/apache2/sites-available/000-default.conf; \
-    apache2-foreground
+CMD php artisan migrate --force; php -S 0.0.0.0:${PORT:-8080} -t public
