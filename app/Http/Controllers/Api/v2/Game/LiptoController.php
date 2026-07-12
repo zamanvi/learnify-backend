@@ -42,7 +42,6 @@ class LiptoController extends Controller
 
         DB::transaction(function () use ($user, $amount, $request) {
             $user->increment('lipto_balance', $amount);
-            $user->refresh();
 
             LiptoTransaction::create([
                 'user_id'       => $user->id,
@@ -57,7 +56,7 @@ class LiptoController extends Controller
         return response()->json([
             'status'  => 'success',
             'earned'  => $amount,
-            'balance' => (int) $user->fresh()->lipto_balance,
+            'balance' => (int) $user->lipto_balance,
         ]);
     }
 
@@ -84,7 +83,6 @@ class LiptoController extends Controller
 
         DB::transaction(function () use ($user, $amount, $request) {
             $user->decrement('lipto_balance', $amount);
-            $user->refresh();
 
             LiptoTransaction::create([
                 'user_id'       => $user->id,
@@ -99,7 +97,7 @@ class LiptoController extends Controller
         return response()->json([
             'status'  => 'success',
             'spent'   => $amount,
-            'balance' => (int) $user->fresh()->lipto_balance,
+            'balance' => (int) $user->lipto_balance,
         ]);
     }
 
@@ -132,8 +130,6 @@ class LiptoController extends Controller
         DB::transaction(function () use ($sender, $receiver, $amount, $request) {
             $sender->decrement('lipto_balance', $amount);
             $receiver->increment('lipto_balance', $amount);
-            $sender->refresh();
-            $receiver->refresh();
 
             LiptoTransaction::create([
                 'user_id'         => $sender->id,
@@ -159,7 +155,7 @@ class LiptoController extends Controller
         return response()->json([
             'status'  => 'success',
             'sent'    => $amount,
-            'balance' => (int) $sender->fresh()->lipto_balance,
+            'balance' => (int) $sender->lipto_balance,
         ]);
     }
 }

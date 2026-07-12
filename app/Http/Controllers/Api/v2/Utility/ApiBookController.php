@@ -69,12 +69,10 @@ class ApiBookController extends Controller
         if ($request->has('per_page')) {
             $perPage = $request->per_page;
         }
-        $bookChapters = BookChapter::where('status', true)->with('book:id,title')->select('id', 'book_id', 'title', 'type', 'slug', 'status', 'pageview');
-
-        if ($request->has('type')) {
-            $bookChapters = BookChapter::where('status', true)->where('type', $request->type)->with('book:id,title')
+        $bookChapters = BookChapter::where('status', true)
+            ->when($request->has('type'), fn($q) => $q->where('type', $request->type))
+            ->with('book:id,title')
             ->select('id', 'book_id', 'title', 'type', 'slug', 'status', 'pageview');
-        }
 
         if ($request->has('book_slug')) {
             $book = Book::where('slug', $request->book_slug)->first();

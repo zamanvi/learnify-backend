@@ -4,9 +4,13 @@ namespace App\Repositories;
 
 use App\Repositories\Interfaces\SettingRepositoryInterface;
 use App\Models\Setting;
+use Illuminate\Support\Facades\Cache;
 
 class SettingRepository implements SettingRepositoryInterface
 {
+    private const CACHE_KEY = 'settings.all';
+    private const CACHE_TTL = 3600;
+
     /**
      * Create or update setting(s)
      *
@@ -17,6 +21,7 @@ class SettingRepository implements SettingRepositoryInterface
         foreach ($data as $key => $value) {
             Setting::updateOrCreate(['key' => $key], ['value' => $value]);
         }
+        Cache::forget(self::CACHE_KEY);
     }
 
     /**
@@ -28,8 +33,8 @@ class SettingRepository implements SettingRepositoryInterface
      */
     public function getSetting(string $key, $default = null)
     {
-        $setting = Setting::where('key', $key)->first();
-        return $setting ? $setting->value : $default;
+        $settings = $this->getAllSetting();
+        return $settings[$key] ?? $default;
     }
     /**
      * Get setting by key
@@ -40,11 +45,13 @@ class SettingRepository implements SettingRepositoryInterface
      */
     public function getAllSetting()
     {
-        $settings = Setting::all();
-        $result = [];
-        foreach ($settings as $setting) {
-            $result[$setting->key] = $setting->value;
-        }
-        return $result;
+        return Cache::remember(self::CACHE_KEY, self::CACHE_TTL, function () {
+            $settings = Setting::all();
+            $result = [];
+            foreach ($settings as $setting) {
+                $result[$setting->key] = $setting->value;
+            }
+            return $result;
+        });
     }
 }

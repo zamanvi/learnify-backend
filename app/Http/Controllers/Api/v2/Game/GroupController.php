@@ -136,7 +136,11 @@ class GroupController extends Controller
 
     private function formatGroup(Group $group, int $myUserId): array
     {
-        $memberCount = $group->members()->count();
+        // Use the already eager-loaded relation when available (e.g. myGroups())
+        // instead of firing a fresh COUNT query per group.
+        $memberCount = $group->relationLoaded('members')
+            ? $group->members->count()
+            : $group->members()->count();
         return [
             'id'           => $group->id,
             'name'         => $group->name,

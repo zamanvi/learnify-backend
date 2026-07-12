@@ -13,7 +13,7 @@ class GameController extends Controller
     // GET /api/game/daily-word
     public function daily_word()
     {
-        $word = Word::where('status', 1)->inRandomOrder()->first();
+        $word = $this->randomWord(Word::where('status', 1));
 
         if (!$word) {
             return response()->json([
@@ -99,8 +99,7 @@ class GameController extends Controller
         $earned = (int) round(($request->score / $request->total) * 10);
         $user->increment('points', $earned);
 
-        $fresh     = $user->fresh();
-        $totalXp   = $fresh->points;
+        $totalXp   = $user->points;
         $rank      = User::where('points', '>', $totalXp)->count() + 1;
 
         return response()->json([
@@ -184,5 +183,18 @@ class GameController extends Controller
                 'streak_days' => $newStreak,
             ],
         ]);
+    }
+
+    // Picks one random row from the given query without ORDER BY RAND(),
+    // which forces a full-table scan+sort on large tables.
+    private function randomWord($query)
+    {
+        $bounds = (clone $query)->selectRaw('MIN(id) as min_id, MAX(id) as max_id')->first();
+        if (!$bounds || $bounds->min_id === null) {
+            return null;
+        }
+        $randomId = rand($bounds->min_id, $bounds->max_id);
+        return (clone $query)->where('id', '>=', $randomId)->orderBy('id')->first()
+            ?? (clone $query)->orderBy('id')->first();
     }
 }
