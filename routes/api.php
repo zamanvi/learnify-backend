@@ -12,7 +12,7 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
 
-Route::prefix('grammer')->middleware(['grammer', 'throttle:60,1'])->group(function () {
+Route::prefix('grammer')->middleware(['grammer', 'throttle:60,1', 'cache.headers:public;max_age=300;etag'])->group(function () {
     Route::get('/initial', [ChapterController::class, 'initial']);
     Route::get('/chapters', [ChapterController::class, 'index']);
     Route::get('/chapter/show/{id}', [ChapterController::class, 'show']);

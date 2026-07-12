@@ -19,7 +19,10 @@ class WordRepository  implements WordRepositoryInterface
     }
     public function getAllById($id)
     {
-        return $this->word->with('lesson')->where('lesson_id', $id)->paginate(30);
+        // lesson_id is already on the word row; the app never reads the
+        // nested lesson relation, so eager-loading it just duplicates the
+        // same Lesson JSON object across every one of the 30 rows per page.
+        return $this->word->where('lesson_id', $id)->paginate(30);
     }
 
     public function findById($id)

@@ -19,7 +19,10 @@ class LessonRepository  implements LessonRepositoryInterface
     }
     public function getAllById($id)
     {
-        return $this->lesson->with('chapter')->where('chapter_id', $id)->paginate(10);
+        // chapter_id is already on the lesson row; neither the app nor the
+        // admin view reads the nested chapter relation, so eager-loading it
+        // just duplicates the same Chapter JSON object across every row.
+        return $this->lesson->where('chapter_id', $id)->paginate(10);
     }
 
     public function findById($id)
