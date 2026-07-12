@@ -9,8 +9,4 @@ class AllClass extends Model
 {
     use HasFactory;
     protected $fillable = ['name'];
-    public function model_test()
-    {
-        return $this->hasMany(ModelTestAll::class);
-    }
 }

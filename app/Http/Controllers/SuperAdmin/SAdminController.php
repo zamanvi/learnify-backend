@@ -4,15 +4,9 @@ namespace App\Http\Controllers\SuperAdmin;
 
 use App\Http\Controllers\Controller;
 use App\Models\AllClass;
-use App\Models\ModelTestResult;
-use App\Models\Blog;
 use App\Models\Page;
 use Illuminate\Http\Request;
 use App\Models\User;
-use App\Models\ScholarShip;
-use App\Models\ScholarShipEnroll;
-use App\Models\ScholarShipResult;
-use App\Models\Slider;
 use App\Repositories\Interfaces\SettingRepositoryInterface;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
@@ -134,27 +128,6 @@ class SAdminController extends Controller
         return redirect()->route($route)->with('success', 'Teacher Update successfull...!');
     }
 
-    public function slider()
-    {
-        $sliders = Slider::get();
-        return view('admin.pages.slider', compact('sliders'));
-    }
-    public function slider_store(Request $request)
-    {
-        $request->validate([
-            'type' => 'required',
-            'image_path' => 'required',
-        ]);
-        $image = upload_file($request->image_path);
-        Slider::create([
-            'type' => $request['type'],
-            'short_description' => $request['short_description'],
-            'image_path' => $image,
-        ]);
-        $this->notification(Auth::user()->id, $request['type'] . ' slider added successful.!',  'slider', '1');
-        return back()->with('success', $request['type'] . ' - slider added successful.!');
-    }
-
     public function app_version(SettingRepositoryInterface $repo)
     {
         $app_version = $repo->getSetting('app_version');
@@ -173,73 +146,6 @@ class SAdminController extends Controller
         return back()->with('success', 'App Version store successful.!');
     }
 
-    public function modeltest_result()
-    {
-        $modeltestresultlist = ModelTestResult::orderby('total_mark', 'desc')->paginate(20);
-        return view('admin.pages.mresult', [
-            'modeltestresultlist' => $modeltestresultlist,
-        ]);
-    }
-    public function blog_create()
-    {
-        $bloglist = Blog::paginate(20);
-        return view('admin.blog.index', [
-            'bloglist' => $bloglist
-        ]);
-    }
-    public function blog_store(Request $request)
-    {
-        $request->validate([
-            'name' => 'required',
-            'description' => 'required'
-        ]);
-        $user = Auth::user();
-        $this->notification($user->id, '"' . $user->name . '" create new blog "' . $request['name'] . '" successful.!',  'blog', '1');
-        $blogs = Blog::createStore($request);
-        if ($blogs) {
-            return back()->with('success', 'New blog "' . $request['name'] . '" created successfull.!');
-        } else {
-            return back()->with('warning', 'Error check all data again and submit again...!');
-        }
-    }
-    public function blog_show($slug)
-    {
-        $blog = Blog::where('slug', $slug)->first();
-        $bloglist = Blog::paginate(20);
-        return view('admin.blog.show', [
-            'bloglist' => $bloglist,
-            'blog' => $blog
-        ]);
-    }
-    public function blog_edit($slug)
-    {
-        $blog = Blog::where('slug', $slug)->first();
-        $bloglist = Blog::paginate(20);
-        return view('admin.blog.edit', [
-            'bloglist' => $bloglist,
-            'blog' => $blog
-        ]);
-    }
-    public function blog_update(Request $request, $id)
-    {
-        $user = Auth::user();
-        $blog = Blog::find($id);
-        $blogs = Blog::updateStore($request, $id);
-        $this->notification($user->id, '"' . $user->name . '" update blog "' . $blog->name . '" successful.!',  'blog', '1');
-        if ($blogs) {
-            return redirect(route('blog.show', Blog::find($id)->slug))->with('success', 'blog "' . $blog->name . '" update successfull.!');
-        } else {
-            return back()->with('warning', 'Error check all data again and submit again...!');
-        }
-    }
-    public function blog_delete($id)
-    {
-        $user = Auth::user();
-        $blog = Blog::find($id);
-        $blog->delete();
-        $this->notification($user->id, '"' . $user->name . '" delete blog "' . $blog->name . '" successful.!',  'blog', '1');
-        return redirect(route('blog.create'))->with('warning', 'blog "' . $blog->name . '" delete successfull.!');
-    }
     public function page_create()
     {
         $pagelist = Page::paginate(20);
@@ -300,141 +206,15 @@ class SAdminController extends Controller
         $this->notification($user->id, '"' . $user->name . '" delete page "' . $page->name . '" successful.!',  'page', '1');
         return redirect(route('page.create'))->with('warning', 'page "' . $page->name . '" delete successfull.!');
     }
-    public function scholarship_create()
-    {
-        return view('admin.schollership.index');
-    }
-    public function scholarship_store(Request $request)
-    {
-        $scholarShip = ScholarShip::createStore($request);
-        if ($scholarShip) {
-            $user = Auth::user();
-            $this->notification($user->id, '"' . $user->name . '" create new ScholarShip "' . $request['title'] . '" successful.!',  'scholarShip', '1');
-            return back()->with('success', 'New ScholarShip "' . $request['title'] . '" created successfull.!');
-        } else {
-            return back()->with('error', 'New ScholarShip "' . $request['title'] . '" can not created successfull.!');
-        }
-    }
-    public function scholarship_show($slug)
-    {
-        $scholarShip = ScholarShip::where('slug', $slug)->first();
-        $is_show = 'view';
-        return view('admin.schollership.show', compact('scholarShip', 'is_show'));
-    }
-    public function scholarship_edit($slug)
-    {
-        $scholarShip = ScholarShip::where('slug', $slug)->first();
-        return view('admin.schollership.edit', compact('scholarShip'));
-    }
-    public function scholarship_update(Request $request, $id)
-    {
-        $scholarShip = ScholarShip::updateStore($request, $id);
-        if ($scholarShip) {
-            $user = Auth::user();
-            $this->notification($user->id, '"' . $user->name . '" update ScholarShip "' . $request['title'] . '" successful.!',  'scholarShip', '1');
-            return back()->with('success', 'ScholarShip "' . $request['title'] . '" update successfull.!');
-        } else {
-            return back()->with('error', 'ScholarShip "' . $request['title'] . '" can not update successfull.!');
-        }
-    }
-    public function scholarship_delete($slug)
-    {
-        $user = Auth::user();
-        $scholarShip = ScholarShip::where('slug', $slug)->first();
-        $scholarShip->delete();
-        $this->notification($user->id, '"' . $user->name . '" delete scholarShip "' . $scholarShip->title . '" successful.!',  'scholarShip', '1');
-        return redirect(route('page.create'))->with('warning', 'scholarShip "' . $scholarShip->title . '" delete successfull.!');
-    }
-    public function scholarship_publish($slug)
-    {
-        $scholarShip = ScholarShip::with('enrollments')->where('slug', $slug)->first();
-        if ($scholarShip) {
-            if ($scholarShip->status && !$scholarShip->is_publish) {
-                $userIds = $scholarShip->enrollments->pluck('user_id')->toArray();
-                ScholarShipResult::where('scholar_ship_id', $scholarShip->id)->delete();
-                $results = [];
-                $randomizedUsers = collect($userIds)->map(function ($userId) {
-                    return ['user_id' => $userId, 'random' => rand()];
-                })->sortBy('random')->values();
-                $winnerLimit = $scholarShip->winner_limit;
-                foreach ($randomizedUsers as $index => $user) {
-                    $isWinner = $index < $winnerLimit ? true : false;
-                    $result = ScholarShipResult::create([
-                        'user_id' => $user['user_id'],
-                        'scholar_ship_id' => $scholarShip->id,
-                        'order_by' => $index + 1,
-                        'is_winner' => $isWinner,
-                    ]);
-                    $results[] = $result;
-                }
-                $scholarShip->is_publish = true;
-                $scholarShip->status = false;
-                $scholarShip->save();
-                return back()->with('success', 'This Scholarship successfully published Now');
-            } else {
-                return back()->with('error', 'This Scholarship already published');
-            }
-        }else {
-            return back()->with('error', 'Scholarship not found');
-        }
-    }
-    public function scholarship_result($slug)
-    {
-        $scholarShip = ScholarShip::where('slug', $slug)->first();
-        if ($scholarShip) {
-            if ($scholarShip->is_publish && !$scholarShip->status) {
-                $scholarShipResults = ScholarShipResult::where('scholar_ship_id', $scholarShip->id)->get();
-                $is_show = 'result';
-                return view('admin.schollership.show', compact('scholarShip', 'is_show', 'scholarShipResults'));
-            } else {
-                return back()->with('error', 'This Scholarship not published yeat');
-            }
-        }else {
-            return back()->with('error', 'Scholarship not found');
-        }
-    }
-    public function scholarship_participant($slug)
-    {
-        $scholarShip = ScholarShip::with('enrollments')->where('slug', $slug)->first();
-        if ($scholarShip) {
-            $scholarShipEnrolls = ScholarShipEnroll::where('scholar_ship_id', $scholarShip->id)->get();
-            $is_show = 'participant';
-            return view('admin.schollership.show', compact('scholarShip', 'is_show', 'scholarShipEnrolls'));
-        }else {
-            return back()->with('error', 'Scholarship not found');
-        }
-    }
     public function superadmin_slug(Request $request)
     {
-        if ($request->type == 'blog') {
-            DB::transaction(function () {
-                Blog::chunk(100, function ($blogs) {
-                    foreach ($blogs as $blog) {
-                        $slug = 'slug-' . $blog->id . '-' . get_random_number(10);
-                        $blog->update(['slug' => $slug]);
-                    }
-                });
+        DB::transaction(function () {
+            User::chunk(100, function ($users) {
+                foreach ($users as $user) {
+                    $slug = 'abmn-slug-' . $user->id . '-' . get_random_number(10);
+                    $user->update(['slug' => $slug]);
+                }
             });
-        }
-        elseif ($request->type == 'book') {
-            DB::transaction(function () {
-                Blog::chunk(100, function ($blogs) {
-                    foreach ($blogs as $blog) {
-                        $slug = 'slug-' . $blog->id . '-' . get_random_number(10);
-                        $blog->update(['slug' => $slug]);
-                    }
-                });
-            });
-        }
-        else {
-            DB::transaction(function () {
-                User::chunk(100, function ($users) {
-                    foreach ($users as $user) {
-                        $slug = 'abmn-slug-' . $user->id . '-' . get_random_number(10);
-                        $user->update(['slug' => $slug]);
-                    }
-                });
-            });
-        }
+        });
     }
 }

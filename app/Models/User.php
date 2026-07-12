@@ -64,26 +64,6 @@ class User extends Authenticatable
     {
         return $this->hasMany(Friend::class);
     }
-    public function send_request()
-    {
-        return $this->hasMany(SendRequest::class);
-    }
-    public function receive_request()
-    {
-        return $this->hasMany(ReceiveRequest::class);
-    }
-    public function message()
-    {
-        return $this->hasMany(Message::class);
-    }
-    public function history()
-    {
-        return $this->hasMany(History::class);
-    }
-    public function blog()
-    {
-        return $this->hasMany(Blog::class);
-    }
 
     public function liptoTransactions()
     {
