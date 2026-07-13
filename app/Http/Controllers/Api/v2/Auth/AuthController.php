@@ -106,6 +106,7 @@ class AuthController extends Controller
         $user = User::create([
             'user_type' => '2',
             'redrose_id' => $redrose_id,
+            'friend_code' => User::generateFriendCode(),
             'name'      => $request['name'],
             'email'     => $request['email'],
             'password'  => Hash::make($request['password']),
