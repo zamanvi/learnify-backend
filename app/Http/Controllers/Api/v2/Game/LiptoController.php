@@ -27,6 +27,8 @@ class LiptoController extends Controller
         ]);
     }
 
+    const DAILY_EARN_CAP = 50;
+
     // POST /api/v2/game/lipto/earn
     // body: { amount: int, source: string, description: string }
     public function earn(Request $request)
@@ -40,23 +42,50 @@ class LiptoController extends Controller
         $user   = $request->user();
         $amount = (int) $request->amount;
 
-        DB::transaction(function () use ($user, $amount, $request) {
-            $user->increment('lipto_balance', $amount);
+        $result = DB::transaction(function () use ($user, $amount, $request) {
+            // Lock this user's row for the duration of the cap check + write so two
+            // concurrent earn calls can't both read the same "today's total" and
+            // both slip under the cap.
+            $locked = User::whereKey($user->id)->lockForUpdate()->first();
+
+            $dayStart = now('Asia/Dhaka')->startOfDay();
+            $earnedToday = (int) LiptoTransaction::where('user_id', $locked->id)
+                ->where('type', 'earn')
+                ->where('created_at', '>=', $dayStart)
+                ->sum('amount');
+
+            if ($earnedToday >= self::DAILY_EARN_CAP) {
+                return ['capped' => true, 'earned' => 0, 'balance' => (int) $locked->lipto_balance];
+            }
+
+            $grantable = min($amount, self::DAILY_EARN_CAP - $earnedToday);
+
+            $locked->increment('lipto_balance', $grantable);
 
             LiptoTransaction::create([
-                'user_id'       => $user->id,
-                'amount'        => $amount,
+                'user_id'       => $locked->id,
+                'amount'        => $grantable,
                 'type'          => 'earn',
                 'source'        => $request->source,
                 'description'   => $request->description,
-                'balance_after' => $user->lipto_balance,
+                'balance_after' => $locked->lipto_balance,
             ]);
+
+            return ['capped' => false, 'earned' => $grantable, 'balance' => (int) $locked->lipto_balance];
         });
+
+        if ($result['capped']) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Daily Lipto earn limit reached',
+                'balance' => $result['balance'],
+            ], 429);
+        }
 
         return response()->json([
             'status'  => 'success',
-            'earned'  => $amount,
-            'balance' => (int) $user->lipto_balance,
+            'earned'  => $result['earned'],
+            'balance' => $result['balance'],
         ]);
     }
 
