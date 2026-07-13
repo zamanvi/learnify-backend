@@ -28,6 +28,8 @@ class LiptoController extends Controller
     }
 
     const DAILY_EARN_CAP = 50;
+    const DAILY_GIFT_CAP = 100;
+    const MIN_ACCOUNT_AGE_DAYS = 7;
 
     // POST /api/v2/game/lipto/earn
     // body: { amount: int, source: string, description: string }
@@ -148,25 +150,48 @@ class LiptoController extends Controller
             return response()->json(['status' => 'error', 'message' => 'Cannot transfer to yourself'], 422);
         }
 
-        if ($sender->lipto_balance < $amount) {
+        if (!$sender->created_at || $sender->created_at->gt(now()->subDays(self::MIN_ACCOUNT_AGE_DAYS))) {
             return response()->json([
                 'status'  => 'error',
-                'message' => 'Insufficient Lipto balance',
-                'balance' => (int) $sender->lipto_balance,
+                'message' => 'Gifting unlocks once your account is ' . self::MIN_ACCOUNT_AGE_DAYS . ' days old',
             ], 422);
         }
 
-        DB::transaction(function () use ($sender, $receiver, $amount, $request) {
-            $sender->decrement('lipto_balance', $amount);
+        $result = DB::transaction(function () use ($sender, $receiver, $amount, $request) {
+            // Lock the sender's row for the duration of the cap/balance check +
+            // write so two concurrent gifts can't both slip under the cap or
+            // both pass the balance check before either decrement lands.
+            $lockedSender = User::whereKey($sender->id)->lockForUpdate()->first();
+
+            $sentToday = (int) LiptoTransaction::where('user_id', $lockedSender->id)
+                ->where('type', 'transfer_out')
+                ->where('created_at', '>=', now('Asia/Dhaka')->startOfDay())
+                ->sum(DB::raw('ABS(amount)'));
+
+            $remainingToday = self::DAILY_GIFT_CAP - $sentToday;
+
+            if ($remainingToday <= 0) {
+                return ['error' => 'cap', 'remaining' => 0, 'balance' => (int) $lockedSender->lipto_balance];
+            }
+
+            if ($amount > $remainingToday) {
+                return ['error' => 'exceeds_cap', 'remaining' => $remainingToday, 'balance' => (int) $lockedSender->lipto_balance];
+            }
+
+            if ($lockedSender->lipto_balance < $amount) {
+                return ['error' => 'balance', 'balance' => (int) $lockedSender->lipto_balance];
+            }
+
+            $lockedSender->decrement('lipto_balance', $amount);
             $receiver->increment('lipto_balance', $amount);
 
             LiptoTransaction::create([
-                'user_id'         => $sender->id,
+                'user_id'         => $lockedSender->id,
                 'amount'          => -$amount,
                 'type'            => 'transfer_out',
                 'source'          => 'transfer',
                 'description'     => $request->description ?? 'Transfer to ' . $receiver->name,
-                'balance_after'   => $sender->lipto_balance,
+                'balance_after'   => $lockedSender->lipto_balance,
                 'related_user_id' => $receiver->id,
             ]);
 
@@ -179,12 +204,39 @@ class LiptoController extends Controller
                 'balance_after'   => $receiver->lipto_balance,
                 'related_user_id' => $sender->id,
             ]);
+
+            return ['error' => null, 'sent' => $amount, 'balance' => (int) $lockedSender->lipto_balance];
         });
+
+        if ($result['error'] === 'cap') {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Daily gifting limit reached',
+                'balance' => $result['balance'],
+            ], 429);
+        }
+
+        if ($result['error'] === 'exceeds_cap') {
+            return response()->json([
+                'status'    => 'error',
+                'message'   => 'You can only gift ' . $result['remaining'] . ' more Lipto today',
+                'remaining' => $result['remaining'],
+                'balance'   => $result['balance'],
+            ], 422);
+        }
+
+        if ($result['error'] === 'balance') {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Insufficient Lipto balance',
+                'balance' => $result['balance'],
+            ], 422);
+        }
 
         return response()->json([
             'status'  => 'success',
-            'sent'    => $amount,
-            'balance' => (int) $sender->lipto_balance,
+            'sent'    => $result['sent'],
+            'balance' => $result['balance'],
         ]);
     }
 }
