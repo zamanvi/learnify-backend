@@ -36,6 +36,10 @@
                                     <option value="both">Both</option>
                                 </select>
                             </div>
+                            <div class="form-group form-check">
+                                <input type="checkbox" name="is_premium" id="is_premium" class="form-check-input" value="1">
+                                <label for="is_premium" class="form-check-label">Premium (unlock costs 50 Lipto)</label>
+                            </div>
                             <input type="submit" class="btn btn-primary" value="Submit" />
                             <input type="reset" class="btn iq-bg-danger" value="Cancel" />
                         </form>

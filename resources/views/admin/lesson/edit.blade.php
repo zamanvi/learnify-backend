@@ -36,6 +36,10 @@
                                     <option @selected($lesson->type == 'both') value="both">Both</option>
                                 </select>
                             </div>
+                            <div class="form-group form-check">
+                                <input type="checkbox" name="is_premium" id="is_premium" class="form-check-input" value="1" @checked($lesson->is_premium)>
+                                <label for="is_premium" class="form-check-label">Premium (unlock costs 50 Lipto)</label>
+                            </div>
                             <input type="submit" class="btn btn-primary" value="Update" />
                             <input type="reset" class="btn iq-bg-danger" value="Cancel" />
                         </form>

@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\v2\Game\GameController;
 use App\Http\Controllers\Api\v2\Game\GroupController;
 use App\Http\Controllers\Api\v2\Game\LiptoController;
 use App\Http\Controllers\Api\v2\Game\NotificationController;
+use App\Http\Controllers\Api\v2\Game\PremiumController;
 use Illuminate\Support\Facades\Route;
 
 // Public game routes - use grammer middleware (x-api-key: app)
@@ -52,6 +53,11 @@ Route::prefix('app')->middleware(['app'])->group(function () {
                 Route::get('/history',     [BattleController::class, 'history']);
                 Route::get('/{id}',        [BattleController::class, 'show']);
                 Route::post('/{id}/submit',[BattleController::class, 'submit']);
+            });
+
+            // Premium content unlock
+            Route::prefix('premium')->group(function () {
+                Route::post('/lesson/{id}/unlock', [PremiumController::class, 'unlockLesson']);
             });
         });
     });

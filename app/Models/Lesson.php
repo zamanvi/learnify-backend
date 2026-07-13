@@ -8,8 +8,8 @@ use Illuminate\Database\Eloquent\Model;
 class Lesson extends Model
 {
     use HasFactory;
-    protected $fillable = ['title', 'type', 'chapter_id', 'status'];
-    protected $casts = ['status' => 'bool'];
+    protected $fillable = ['title', 'type', 'chapter_id', 'status', 'is_premium'];
+    protected $casts = ['status' => 'bool', 'is_premium' => 'bool'];
 
     public function chapter()
     {
