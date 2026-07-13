@@ -55,7 +55,9 @@ class LessonController extends Controller
         $data = $request->except('_token');
         $chapter = Chapter::find($data['chapter_id']);
         $data['type'] = $chapter->type;
-        $data['is_premium'] = $request->has('is_premium');
+        if (\Illuminate\Support\Facades\Schema::hasColumn('lessons', 'is_premium')) {
+            $data['is_premium'] = $request->has('is_premium');
+        }
         $this->lessonRepository->store($data);
         return back();
     }
@@ -97,7 +99,9 @@ class LessonController extends Controller
         $data = $request->except('_token');
         $chapter = Chapter::find($data['chapter_id']);
         $data['type'] = $chapter->type;
-        $data['is_premium'] = $request->has('is_premium');
+        if (\Illuminate\Support\Facades\Schema::hasColumn('lessons', 'is_premium')) {
+            $data['is_premium'] = $request->has('is_premium');
+        }
         $this->lessonRepository->update($id, $data);
         return back();
     }

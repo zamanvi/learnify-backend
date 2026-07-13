@@ -103,10 +103,9 @@ class AuthController extends Controller
 
         $redrose_id = Str::slug($request->name) . rand(100, 99999);
 
-        $user = User::create([
+        $userData = [
             'user_type' => '2',
             'redrose_id' => $redrose_id,
-            'friend_code' => User::generateFriendCode(),
             'name'      => $request['name'],
             'email'     => $request['email'],
             'password'  => Hash::make($request['password']),
@@ -116,7 +115,17 @@ class AuthController extends Controller
             'once'      => 'no',
             'phone'     => '01000000000',
             'points'    => '10',
-        ]);
+        ];
+
+        // Defensive: don't assume the friend_code migration has already run
+        // on this environment's DB - inserting a column that doesn't exist
+        // yet would 500 every signup, which is worse than just skipping it
+        // for the (brief) window before the migration lands.
+        if (\Illuminate\Support\Facades\Schema::hasColumn('users', 'friend_code')) {
+            $userData['friend_code'] = User::generateFriendCode();
+        }
+
+        $user = User::create($userData);
         if ($user) {
             Friend::create([
                 'user_id' => $user->id,
