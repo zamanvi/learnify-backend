@@ -160,7 +160,7 @@ class BattleController extends Controller
         $battles = Battle::where(function ($q) use ($user) {
             $q->where('challenger_id', $user->id)->orWhere('opponent_id', $user->id);
         })->where('status', 'completed')
-          ->with(['challenger:id,name', 'opponent:id,name'])
+          ->with(['challenger:id,name,points', 'opponent:id,name,points'])
           ->latest()
           ->limit(20)
           ->get();
