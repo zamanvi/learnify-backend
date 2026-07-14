@@ -8,6 +8,7 @@
                     <tr>
                         <th>Title</th>
                         <th>Type</th>
+                        <th>Premium</th>
                         <th width="5%">Action</th>
                     </tr>
                 </thead>
@@ -16,6 +17,13 @@
                         <tr>
                             <td>{{ $lesson->title }}</td>
                             <td>{{ ucfirst($lesson->type) }}</td>
+                            <td>
+                                @if ($lesson->is_premium)
+                                    <span class="badge badge-warning">Premium</span>
+                                @else
+                                    <span class="badge badge-secondary">Free</span>
+                                @endif
+                            </td>
                             <td>
                                 <div class="iq-card-header-toolbar d-flex align-items-center">
                                     <div class="dropdown">
@@ -32,6 +40,13 @@
                                                     class="ri-eye-fill mr-2"></i>Show</a>
                                             <a class="dropdown-item" href="{{ route('lessons.edit', $lesson->id) }}"><i
                                                     class="ri-eye-fill mr-2"></i>Edit</a>
+                                            <form action="{{ route('lessons.toggle-premium', $lesson->id) }}" method="POST" style="display: inline;">
+                                                @csrf
+                                                <button type="submit" class="dropdown-item">
+                                                    <i class="ri-vip-crown-fill mr-2"></i>
+                                                    {{ $lesson->is_premium ? 'Remove Premium' : 'Mark Premium' }}
+                                                </button>
+                                            </form>
                                             <form action="{{ route('lessons.destroy', $lesson->id) }}" method="POST" style="display: inline;">
                                                 @csrf
                                                 @method('DELETE')

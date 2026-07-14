@@ -118,6 +118,21 @@ class LessonController extends Controller
     }
 
     /**
+     * One-click flip of a lesson's Premium flag from the lesson list,
+     * so admins don't have to open the full Edit form just for this.
+     */
+    public function togglePremium(string $id)
+    {
+        $lesson = \App\Models\Lesson::find($id);
+        if (!$lesson) {
+            return back()->with('error', 'Lesson not found.!');
+        }
+        $lesson->is_premium = !$lesson->is_premium;
+        $lesson->save();
+        return back()->with('success', $lesson->title . ($lesson->is_premium ? ' marked Premium.!' : ' marked Free.!'));
+    }
+
+    /**
      * Remove the specified resource from storage.
      */
     public function destroy(string $id)

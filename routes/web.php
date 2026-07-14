@@ -65,6 +65,7 @@ Route::middleware(['auth:sanctum',config('jetstream.auth_session'),'verified'])-
         Route::resource('chapters', ChapterController::class);
         Route::resource('chapters/lessons', LessonController::class);
         Route::get('chapters/lessons/create/{id}', [LessonController::class, 'chapters_lessons_create'])->name('chapters.lessons.create');
+        Route::post('chapters/lessons/{id}/toggle-premium', [LessonController::class, 'togglePremium'])->name('lessons.toggle-premium');
         Route::resource('chapters/lessons/words', WordController::class);
         Route::get('chapters/lessons/words/create/{id}', [WordController::class, 'chapters_lessons_words_create'])->name('chapters.lessons.words.create');
     });
