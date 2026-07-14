@@ -3,13 +3,37 @@
 namespace App\Http\Controllers\Api\v2\Game;
 
 use App\Http\Controllers\Controller;
+use App\Models\Lesson;
+use App\Models\UnlockedLesson;
 use App\Models\Word;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Laravel\Sanctum\PersonalAccessToken;
 
 class GameController extends Controller
 {
+    // Same bearer-token-optional unlock check WordController uses for the
+    // word-list gate - the quiz endpoint needs the identical guard, otherwise
+    // it's a back door around the Premium paywall (quiz on the full word set
+    // without ever unlocking).
+    private function isLessonUnlockedByRequest(Request $request, $lessonId): bool
+    {
+        $bearer = $request->bearerToken();
+        if (!$bearer) {
+            return false;
+        }
+
+        $user = PersonalAccessToken::findToken($bearer)?->tokenable;
+        if (!$user) {
+            return false;
+        }
+
+        return UnlockedLesson::where('user_id', $user->id)
+            ->where('lesson_id', $lessonId)
+            ->exists();
+    }
+
     // GET /api/game/daily-word
     public function daily_word()
     {
@@ -39,6 +63,14 @@ class GameController extends Controller
     // GET /api/game/quiz/{lesson_id}?count=10
     public function quiz($lesson_id, Request $request)
     {
+        $lesson = Lesson::find($lesson_id);
+        if ($lesson && $lesson->is_premium && !$this->isLessonUnlockedByRequest($request, $lesson_id)) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'এই লেসন Premium — আগে আনলক করো',
+            ], 403);
+        }
+
         $count = min((int) $request->query('count', 10), 20);
 
         $words = Word::where('lesson_id', $lesson_id)
