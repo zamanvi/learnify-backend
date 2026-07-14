@@ -11,6 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (!Schema::hasTable('books')) {
         Schema::create('books', function (Blueprint $table) {
             $table->id();
             $table->string('owner_id')->nullable();
@@ -21,6 +22,7 @@ return new class extends Migration
             $table->string('added_by');
             $table->timestamps();
         });
+        }
     }
 
     /**

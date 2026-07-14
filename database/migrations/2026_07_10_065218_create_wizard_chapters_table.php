@@ -8,6 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (!Schema::hasTable('wizard_chapters')) {
         Schema::create('wizard_chapters', function (Blueprint $table) {
             $table->id();
             $table->string('title');
@@ -16,6 +17,7 @@ return new class extends Migration
             $table->integer('order_by')->default(0);
             $table->timestamps();
         });
+        }
     }
 
     public function down(): void

@@ -11,12 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (!Schema::hasTable('otps')) {
         Schema::create('otps', function (Blueprint $table) {
             $table->id();
             $table->string('email');
             $table->string('otp');
             $table->timestamps();
         });
+        }
     }
 
     /**

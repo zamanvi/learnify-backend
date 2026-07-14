@@ -10,6 +10,7 @@ return new class extends Migration {
      */
     public function up(): void
     {
+        if (!Schema::hasTable('users')) {
         Schema::create('users', function (Blueprint $table) {
             $table->increments('id');
             $table->string('user_type');
@@ -89,6 +90,7 @@ return new class extends Migration {
             $table->string('profile_photo_path')->nullable();
             $table->timestamps();
         });
+        }
     }
 
     /**

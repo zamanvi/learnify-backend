@@ -11,6 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (!Schema::hasTable('friends')) {
         Schema::create('friends', function (Blueprint $table) {
             $table->increments('id');
             $table->integer('user_id')->unsigned();
@@ -23,6 +24,7 @@ return new class extends Migration
                 ->on('users')
                 ->onDelete('cascade');
         });
+        }
     }
 
     /**

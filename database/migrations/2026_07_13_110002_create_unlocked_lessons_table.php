@@ -8,6 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (!Schema::hasTable('unlocked_lessons')) {
         Schema::create('unlocked_lessons', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
@@ -15,6 +16,7 @@ return new class extends Migration
             $table->timestamps();
             $table->unique(['user_id', 'lesson_id']);
         });
+        }
     }
 
     public function down(): void

@@ -8,6 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (!Schema::hasTable('notification_logs')) {
         Schema::create('notification_logs', function (Blueprint $table) {
             $table->id();
             $table->string('type');
@@ -17,6 +18,7 @@ return new class extends Migration
             $table->timestamp('sent_at')->nullable();
             $table->timestamps();
         });
+        }
     }
 
     public function down(): void

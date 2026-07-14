@@ -11,6 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (!Schema::hasTable('notices')) {
         Schema::create('notices', function (Blueprint $table) {
             $table->id();
             $table->string('title');
@@ -20,6 +21,7 @@ return new class extends Migration
             $table->boolean('is_sent')->default(false);
             $table->timestamps();
         });
+        }
     }
 
     /**

@@ -11,6 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (!Schema::hasTable('support_replays')) {
         Schema::create('support_replays', function (Blueprint $table) {
             $table->increments('id');
             $table->integer('support_id')->unsigned();
@@ -24,6 +25,7 @@ return new class extends Migration
                 ->on('supports')
                 ->onDelete('cascade');
         });
+        }
     }
 
     /**

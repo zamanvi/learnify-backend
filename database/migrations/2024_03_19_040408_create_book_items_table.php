@@ -11,6 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (!Schema::hasTable('book_items')) {
         Schema::create('book_items', function (Blueprint $table) {
             $table->id();
             $table->string('title');
@@ -28,6 +29,7 @@ return new class extends Migration
             $table->foreignId('chapter_id')->constrained('book_chapters')->onDelete('cascade');
             $table->timestamps();
         });
+        }
     }
 
     /**

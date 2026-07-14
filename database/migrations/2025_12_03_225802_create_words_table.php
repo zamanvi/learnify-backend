@@ -11,6 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (!Schema::hasTable('words')) {
         Schema::create('words', function (Blueprint $table) {
             $table->id();
             $table->string('word');
@@ -22,6 +23,7 @@ return new class extends Migration
             $table->boolean('status')->default(true);
             $table->timestamps();
         });
+        }
     }
 
     /**

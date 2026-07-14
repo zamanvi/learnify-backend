@@ -8,6 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (!Schema::hasTable('wizard_stories')) {
         Schema::create('wizard_stories', function (Blueprint $table) {
             $table->id();
             $table->foreignId('chapter_id')->constrained('wizard_chapters')->onDelete('cascade');
@@ -21,6 +22,7 @@ return new class extends Migration
             $table->integer('order_by')->default(0);
             $table->timestamps();
         });
+        }
     }
 
     public function down(): void
