@@ -16,6 +16,7 @@ Route::prefix('grammer')->middleware(['grammer', 'throttle:60,1', 'cache.headers
     Route::get('/initial', [ChapterController::class, 'initial']);
     Route::get('/chapters', [ChapterController::class, 'index']);
     Route::get('/chapter/show/{id}', [ChapterController::class, 'show']);
+    Route::get('/lessons', [LessonController::class, 'allForBattle']);
     Route::get('/lessons/{id}', [LessonController::class, 'chapters_lessons_create']);
     Route::get('/lesson/show/{id}', [LessonController::class, 'show']);
     Route::get('/words/{id}', [WordController::class, 'chapters_lessons_words_create']);

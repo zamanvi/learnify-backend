@@ -48,6 +48,17 @@ class LessonController extends Controller
     }
 
     /**
+     * Flat list of every lesson across all chapters, id+title only.
+     * Used by the Battle "challenge a friend" lesson picker, which lets a
+     * user pick any lesson regardless of which chapter it lives under.
+     */
+    public function allForBattle()
+    {
+        $lessons = \App\Models\Lesson::select('id', 'title')->orderBy('title')->get();
+        return ApiResponse::respond(['lessons' => $lessons], true, 'All lessons', Response::HTTP_OK);
+    }
+
+    /**
      * Store a newly created resource in storage.
      */
     public function store(Request $request)
