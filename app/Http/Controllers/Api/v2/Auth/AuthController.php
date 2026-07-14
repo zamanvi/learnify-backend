@@ -70,7 +70,11 @@ class AuthController extends Controller
             'password' => 'required',
         ]);
 
-        $user = User::whereRaw('LOWER(name) = ?', [strtolower($request->name)])->first();
+        // The "name" field doubles as an email login - most users expect to
+        // be able to sign in with either, and Register already collects both.
+        $user = User::whereRaw('LOWER(name) = ?', [strtolower($request->name)])
+            ->orWhereRaw('LOWER(email) = ?', [strtolower($request->name)])
+            ->first();
         if ($user && Hash::check($request->password, $user->password)) {
             Notification::create([
                 'user_id' => $user->id,
@@ -187,6 +191,30 @@ class AuthController extends Controller
             return $this->apiResponse('', false, 'Email পাঠাতে ব্যর্থ: ' . $e->getMessage(), AppResponse::HTTP_NOT_ACCEPTABLE);
         }
     }
+    const OTP_VALID_MINUTES = 10;
+
+    // How step 2 (OTP entry) tells the user their code is right before they've
+    // typed a new password - doesn't consume the OTP, just checks it, so the
+    // same OTP still works for the real confirm_password_verify() call after.
+    public function verify_otp(Request $request)
+    {
+        $data = ['email' => $request->input('email'), 'otp' => $request->input('otp')];
+        $roules = ['email' => 'required', 'otp' => 'required'];
+
+        if ($this->request_validator($data, $roules)) {
+            return $this->apiresponse('', false, 'Make sure you need to fill all the required parametter.', AppResponse::HTTP_NOT_ACCEPTABLE);
+        }
+
+        $otp = Otp::where('email', $request->input('email'))->first();
+        if (!$otp || $otp->otp != $request->input('otp')) {
+            return $this->apiresponse('', false, 'OTP ভুল, আবার চেষ্টা করো।', AppResponse::HTTP_UNPROCESSABLE_ENTITY);
+        }
+        if ($otp->updated_at->lt(now()->subMinutes(self::OTP_VALID_MINUTES))) {
+            return $this->apiresponse('', false, 'OTP-এর মেয়াদ শেষ, নতুন OTP চাও।', AppResponse::HTTP_UNPROCESSABLE_ENTITY);
+        }
+        return $this->apiresponse('', true, 'OTP সঠিক আছে।', AppResponse::HTTP_OK);
+    }
+
     function confirm_password_verify(Request $request)
     {
         $data = [
@@ -206,6 +234,12 @@ class AuthController extends Controller
             $email = $request->input('email');
 
             $otp = Otp::where('email', $email)->first();
+            if (!$otp) {
+                return $this->apiresponse('', false, 'আগে OTP চাও।', AppResponse::HTTP_UNPROCESSABLE_ENTITY);
+            }
+            if ($otp->updated_at->lt(now()->subMinutes(self::OTP_VALID_MINUTES))) {
+                return $this->apiresponse('', false, 'OTP-এর মেয়াদ শেষ, নতুন OTP চাও।', AppResponse::HTTP_UNPROCESSABLE_ENTITY);
+            }
             if ($request->otp == $otp->otp) {
                 $user = User::where('email', $email)->first();
                 User::where('id', $user->id)->update(['password' => Hash::make($request->password)]);
