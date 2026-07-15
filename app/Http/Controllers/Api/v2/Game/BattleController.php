@@ -211,8 +211,12 @@ class BattleController extends Controller
             'my_score'   => $myScore,
             'their_score'=> $theirScore,
             'winner_id'  => $battle->winner_id,
+            // 'challenger'/'opponent' are raw DB roles, not "me" vs "them" -
+            // clients that want the other player regardless of which role
+            // I hold should use 'other' instead.
             'challenger' => $this->formatUser($battle->challenger),
             'opponent'   => $this->formatUser($battle->opponent),
+            'other'      => $this->formatUser($isChallenger ? $battle->opponent : $battle->challenger),
         ];
     }
 
