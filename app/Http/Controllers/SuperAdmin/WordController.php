@@ -31,10 +31,6 @@ class WordController extends Controller
     /**
      * Show the form for creating a new resource.
      */
-    public function create()
-    {
-        //
-    }
     public function chapters_lessons_words_create(Request $request, $id)
     {
         $clientType = get_client_type() ?? 'web';

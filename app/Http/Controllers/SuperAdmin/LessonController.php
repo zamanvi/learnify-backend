@@ -29,13 +29,6 @@ class LessonController extends Controller
     /**
      * Show the form for creating a new resource.
      */
-    public function create()
-    {
-        return view('admin.lesson.index');
-    }
-    /**
-     * Show the form for creating a new resource.
-     */
     public function chapters_lessons_create($id)
     {
         $lessons = $this->lessonRepository->getAllById($id);

@@ -48,7 +48,6 @@ Route::middleware(['auth:sanctum',config('jetstream.auth_session'),'verified'])-
 
     Route::get('/adminlist', [SAdminController::class, 'adminlist'])->name('adminlist');
     Route::get('/alluser', [SAdminController::class, 'alluser'])->name('alluser');
-    Route::get('students', [SAdminController::class, 'admin_approval_students'])->name('admin.approval.students');
     Route::get('approved/teacher', [SAdminController::class, 'admin_approval_teacher_index'])->name('admin.approval.teacher.index');
     Route::get('pending/teacher', [SAdminController::class, 'admin_approval_teacher_pending'])->name('admin.approval.teacher.pending');
     Route::get('unapproved/teacher', [SAdminController::class, 'admin_approval_teacher_unapproved'])->name('admin.approval.teacher.unapproved');
@@ -64,10 +63,10 @@ Route::middleware(['auth:sanctum',config('jetstream.auth_session'),'verified'])-
     // vocabulary Panel Super Admin
     Route::prefix('vocabulary')->group(function () {
         Route::resource('chapters', ChapterController::class);
-        Route::resource('chapters/lessons', LessonController::class);
+        Route::resource('chapters/lessons', LessonController::class)->except(['create']);
         Route::get('chapters/lessons/create/{id}', [LessonController::class, 'chapters_lessons_create'])->name('chapters.lessons.create');
         Route::post('chapters/lessons/{id}/toggle-premium', [LessonController::class, 'togglePremium'])->name('lessons.toggle-premium');
-        Route::resource('chapters/lessons/words', WordController::class);
+        Route::resource('chapters/lessons/words', WordController::class)->except(['create']);
         Route::get('chapters/lessons/words/create/{id}', [WordController::class, 'chapters_lessons_words_create'])->name('chapters.lessons.words.create');
     });
 
