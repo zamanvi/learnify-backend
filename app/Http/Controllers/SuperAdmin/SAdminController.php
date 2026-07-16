@@ -50,7 +50,7 @@ class SAdminController extends Controller
     public function createadmin(Request $request)
     {
         $request->validate([
-            'user_type' => 'required',
+            'user_type' => ['required', 'in:1'],
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
             'password' => ['required', 'string', new Password(), 'confirmed'],

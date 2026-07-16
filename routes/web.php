@@ -39,7 +39,8 @@ Route::middleware(['auth:sanctum',config('jetstream.auth_session'),'verified'])-
         }
     })->name('dashboard');
 
-    // Superadmin & admin start
+    // Superadmin & admin start - restricted to super admins only (user_type == 1)
+    Route::middleware('super_admin')->group(function () {
     Route::get('superadmin/slug', [SAdminController::class, 'superadmin_slug']);
     Route::get('/clear-cash', [HomeController::class, 'clear_cash']);
     // Route::get('/old-teacher', [HomeController::class, 'old_teacher']);
@@ -136,5 +137,6 @@ Route::middleware(['auth:sanctum',config('jetstream.auth_session'),'verified'])-
     Route::get('/supportreplay/{id}', [HomeController::class, 'support_replay_create']);
     Route::post('/supportreplay/{id}', [HomeController::class, 'support_replay_store']);
     // Superadmin & admin end
+    });
 
 });
