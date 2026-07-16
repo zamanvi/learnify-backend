@@ -12,4 +12,8 @@ class Chapter extends Model
 
     protected $casts = ['status' => 'bool'];
 
+    public function lessons()
+    {
+        return $this->hasMany(Lesson::class);
+    }
 }

@@ -16,6 +16,7 @@ class ChapterRepository  implements ChapterRepositoryInterface
     public function getAll(?string $type = null)
     {
         return $this->chapter
+            ->withCount('lessons')
             ->when($type, fn ($query) => $query->where('type', $type))
             ->paginate(10);
     }
