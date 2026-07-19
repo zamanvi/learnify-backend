@@ -84,6 +84,11 @@
                                     placeholder="গ্রামার নোট ১ :: ব্যাখ্যা এখানে লিখুন">{{ isset($story) ? collect($story->grammar_notes)->map(fn($n) => $n['label'] . ' :: ' . $n['text'])->implode("\n") : '' }}</textarea>
                             </div>
                             <div class="form-group">
+                                <label>Vocabulary — one per line, as "word :: phonetic :: meaning :: pos"</label>
+                                <textarea name="vocabulary" class="form-control" rows="5"
+                                    placeholder="molasses :: মোলাসিস :: গুড়ের রস, চিটাগুড় :: N">{{ isset($story) ? collect($story->vocabulary)->map(fn($v) => $v['word'] . ' :: ' . $v['phonetic'] . ' :: ' . $v['meaning'] . ' :: ' . $v['pos'])->implode("\n") : '' }}</textarea>
+                            </div>
+                            <div class="form-group">
                                 <label>Order</label>
                                 <input type="number" name="order_by" class="form-control"
                                     value="{{ $story->order_by ?? 0 }}">

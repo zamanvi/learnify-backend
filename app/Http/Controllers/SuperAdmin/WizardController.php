@@ -82,6 +82,7 @@ class WizardController extends Controller
             'bangla_title' => $request->bangla_title,
             'bangla_paragraphs' => $this->splitParagraphs($request->bangla_content),
             'grammar_notes' => $this->parseGrammarNotes($request->grammar_notes),
+            'vocabulary' => $this->parseVocabulary($request->vocabulary),
             'order_by' => $request->order_by ?? 0,
             'status' => true,
         ]);
@@ -115,6 +116,7 @@ class WizardController extends Controller
             'bangla_title' => $request->bangla_title,
             'bangla_paragraphs' => $this->splitParagraphs($request->bangla_content),
             'grammar_notes' => $this->parseGrammarNotes($request->grammar_notes),
+            'vocabulary' => $this->parseVocabulary($request->vocabulary),
             'order_by' => $request->order_by ?? 0,
             'status' => $request->has('status'),
         ]);
@@ -151,5 +153,26 @@ class WizardController extends Controller
             }
         }
         return $notes;
+    }
+
+    // Vocabulary entries are entered one per line as "word :: phonetic :: meaning :: pos".
+    private function parseVocabulary($text)
+    {
+        if (!$text) return [];
+        $entries = [];
+        foreach (explode("\n", $text) as $line) {
+            $line = trim($line);
+            if ($line === '') continue;
+            $parts = array_map('trim', explode('::', $line, 4));
+            if (count($parts) === 4) {
+                $entries[] = [
+                    'word' => $parts[0],
+                    'phonetic' => $parts[1],
+                    'meaning' => $parts[2],
+                    'pos' => $parts[3],
+                ];
+            }
+        }
+        return $entries;
     }
 }
