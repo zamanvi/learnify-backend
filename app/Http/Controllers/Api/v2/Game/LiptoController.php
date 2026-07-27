@@ -27,6 +27,35 @@ class LiptoController extends Controller
         ]);
     }
 
+    // GET /api/v2/game/lipto/find-friend?code=XXXXXX
+    public function findFriend(Request $request)
+    {
+        $request->validate([
+            'code' => 'required|string|max:10',
+        ]);
+
+        $code = strtoupper(trim($request->query('code')));
+
+        $friend = User::where('friend_code', $code)->first();
+
+        if (!$friend) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'এই কোডের কোনো বন্ধু পাওয়া যায়নি',
+            ], 404);
+        }
+
+        return response()->json([
+            'status'  => 'success',
+            'user'    => [
+                'id'      => $friend->id,
+                'name'    => $friend->name,
+                'avatar'  => $friend->profile_photo,
+                'is_self' => $friend->id === $request->user()->id,
+            ],
+        ]);
+    }
+
     const DAILY_EARN_CAP = 50;
     const DAILY_GIFT_CAP = 100;
     const MIN_ACCOUNT_AGE_DAYS = 7;

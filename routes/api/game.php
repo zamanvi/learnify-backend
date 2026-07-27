@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\v2\Game\GroupController;
 use App\Http\Controllers\Api\v2\Game\LiptoController;
 use App\Http\Controllers\Api\v2\Game\NotificationController;
 use App\Http\Controllers\Api\v2\Game\PremiumController;
+use App\Http\Controllers\Api\v2\Profile\ProfileController;
 use Illuminate\Support\Facades\Route;
 
 // Public game routes - use grammer middleware (x-api-key: app)
@@ -25,10 +26,11 @@ Route::prefix('app')->middleware(['app'])->group(function () {
 
             // Lipto virtual currency
             Route::prefix('lipto')->group(function () {
-                Route::get('/balance',   [LiptoController::class, 'balance']);
-                Route::post('/earn',     [LiptoController::class, 'earn']);
-                Route::post('/spend',    [LiptoController::class, 'spend']);
-                Route::post('/transfer', [LiptoController::class, 'transfer']);
+                Route::get('/balance',      [LiptoController::class, 'balance']);
+                Route::post('/earn',        [LiptoController::class, 'earn']);
+                Route::post('/spend',       [LiptoController::class, 'spend']);
+                Route::post('/transfer',    [LiptoController::class, 'transfer']);
+                Route::get('/find-friend',  [LiptoController::class, 'findFriend']);
             });
 
             // Group / Room
@@ -60,5 +62,10 @@ Route::prefix('app')->middleware(['app'])->group(function () {
                 Route::post('/lesson/{id}/unlock', [PremiumController::class, 'unlockLesson']);
             });
         });
+    });
+
+    // Profile (avatar upload etc.)
+    Route::prefix('profile')->middleware(['auth:sanctum', config('jetstream.auth_session')])->group(function () {
+        Route::post('/photo', [ProfileController::class, 'updatePhoto']);
     });
 });
