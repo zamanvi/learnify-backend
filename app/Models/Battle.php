@@ -11,6 +11,12 @@ class Battle extends Model
         'challenger_score', 'challenger_total', 'challenger_time_sec',
         'opponent_score', 'opponent_total', 'opponent_time_sec',
         'winner_id',
+        'mode', 'question_count', 'lives', 'question_word_ids',
+        'invite_code', 'max_participants',
+    ];
+
+    protected $casts = [
+        'question_word_ids' => 'array',
     ];
 
     public function challenger()
@@ -26,5 +32,10 @@ class Battle extends Model
     public function winner()
     {
         return $this->belongsTo(User::class, 'winner_id');
+    }
+
+    public function battle_participants()
+    {
+        return $this->hasMany(BattleParticipant::class);
     }
 }

@@ -7,6 +7,7 @@ use App\Models\Lesson;
 use App\Models\UnlockedLesson;
 use App\Models\Word;
 use App\Models\User;
+use App\Services\QuizQuestionBuilder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Laravel\Sanctum\PersonalAccessToken;
@@ -61,7 +62,9 @@ class GameController extends Controller
     }
 
     // GET /api/game/quiz/{lesson_id}?count=10
-    public function quiz($lesson_id, Request $request)
+    // GET /api/game/quiz/{lesson_id}?word_ids=12,88,5  (fixed set - used by
+    // battles so every participant gets the identical question set)
+    public function quiz($lesson_id, Request $request, QuizQuestionBuilder $builder)
     {
         $lesson = Lesson::find($lesson_id);
         if ($lesson && $lesson->is_premium && !$this->isLessonUnlockedByRequest($request, $lesson_id)) {
@@ -71,46 +74,22 @@ class GameController extends Controller
             ], 403);
         }
 
-        $count = min((int) $request->query('count', 10), 20);
+        $wordIdsParam = $request->query('word_ids');
+        if ($wordIdsParam) {
+            $wordIds = array_values(array_filter(array_map('intval', explode(',', $wordIdsParam))));
+            $questions = $builder->buildQuestionsFromWordIds($wordIds);
+        } else {
+            $count = min((int) $request->query('count', 10), 20);
+            $wordIds = $builder->selectWordIds($lesson_id, $count);
+            $questions = $builder->buildQuestionsFromWordIds($wordIds);
+        }
 
-        $words = Word::where('lesson_id', $lesson_id)
-            ->where('status', 1)
-            ->inRandomOrder()
-            ->limit($count)
-            ->get();
-
-        if ($words->isEmpty()) {
+        if (empty($questions)) {
             return response()->json([
                 'status'  => 'error',
                 'message' => 'No words found for this lesson',
             ], 404);
         }
-
-        $allMeanings = Word::where('status', 1)
-            ->whereNotIn('id', $words->pluck('id'))
-            ->inRandomOrder()
-            ->limit(30)
-            ->pluck('meaning')
-            ->toArray();
-
-        $questions = $words->map(function ($word) use ($allMeanings) {
-            $wrongOptions = array_slice(array_diff($allMeanings, [$word->meaning]), 0, 3);
-            while (count($wrongOptions) < 3) {
-                $wrongOptions[] = 'N/A';
-            }
-
-            $options = array_merge([$word->meaning], $wrongOptions);
-            shuffle($options);
-
-            $correctIndex = array_search($word->meaning, $options);
-
-            return [
-                'question'      => $word->word,
-                'correct_index' => $correctIndex,
-                'options'       => array_values($options),
-                'explanation'   => $word->synonyms ?? '',
-            ];
-        });
 
         return response()->json([
             'status' => 'success',

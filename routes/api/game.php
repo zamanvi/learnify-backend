@@ -48,13 +48,16 @@ Route::prefix('app')->middleware(['app'])->group(function () {
                 Route::post('/test',  [NotificationController::class, 'test']);
             });
 
-            // Battle (async 1v1)
+            // Battle (async 1v1 + customize multi-player)
             Route::prefix('battle')->group(function () {
-                Route::post('/challenge',  [BattleController::class, 'challenge']);
-                Route::get('/pending',     [BattleController::class, 'pending']);
-                Route::get('/history',     [BattleController::class, 'history']);
-                Route::get('/{id}',        [BattleController::class, 'show']);
-                Route::post('/{id}/submit',[BattleController::class, 'submit']);
+                Route::post('/challenge',    [BattleController::class, 'challenge']);
+                Route::post('/create',       [BattleController::class, 'create']);
+                Route::get('/resolve-code',  [BattleController::class, 'resolveCode']);
+                Route::post('/join',         [BattleController::class, 'join']);
+                Route::get('/pending',       [BattleController::class, 'pending']);
+                Route::get('/history',       [BattleController::class, 'history']);
+                Route::get('/{id}',          [BattleController::class, 'show']);
+                Route::post('/{id}/submit',  [BattleController::class, 'submit']);
             });
 
             // Premium content unlock
