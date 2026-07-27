@@ -17,6 +17,11 @@ class Kernel extends ConsoleKernel
 
         // রাত ৮:০০ — streak reminder (Bangladesh = UTC+6, so 14:00 UTC)
         $schedule->command('notify:evening-streak')->dailyAt('14:00');
+
+        // সন্ধ্যা ৬:৩০ — activity-based reminder, tone varies by inactivity length
+        // (Bangladesh = UTC+6, so 12:30 UTC; kept apart from the other two sends
+        // above so no user gets two pushes back-to-back)
+        $schedule->command('notify:activity-reminder')->dailyAt('12:30');
     }
 
     /**
