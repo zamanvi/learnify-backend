@@ -4,12 +4,15 @@ namespace App\Http\Controllers\Api\v2\Game;
 
 use App\Http\Controllers\Controller;
 use App\Models\Lesson;
+use App\Models\LiptoTransaction;
 use App\Models\UnlockedLesson;
+use App\Models\UserLessonRoundProgress;
 use App\Models\Word;
 use App\Models\User;
 use App\Services\QuizQuestionBuilder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Laravel\Sanctum\PersonalAccessToken;
 
 class GameController extends Controller
@@ -95,6 +98,235 @@ class GameController extends Controller
             'status' => 'success',
             'data'   => $questions,
         ]);
+    }
+
+    // GET /api/game/round-quiz/{lesson_id}/{round}
+    // round: 1=MCQ, 2=Reading, 3=Listening, 4=Writing
+    public function roundQuiz($lesson_id, $round, Request $request, QuizQuestionBuilder $builder)
+    {
+        $round = (int) $round;
+        if ($round < 1 || $round > 4) {
+            return response()->json(['status' => 'error', 'message' => 'Invalid round'], 422);
+        }
+
+        $lesson = Lesson::find($lesson_id);
+        if ($lesson && $lesson->is_premium && !$this->isLessonUnlockedByRequest($request, $lesson_id)) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'এই লেসন Premium — আগে আনলক করো',
+            ], 403);
+        }
+
+        $questions = match ($round) {
+            1 => $builder->buildQuestionsFromWordIds($builder->selectWordIds($lesson_id, 10)),
+            2 => $builder->buildReadingQuestions($lesson_id, 20),
+            3 => $builder->buildListeningQuestions($lesson_id, 10),
+            4 => $builder->buildWritingQuestions($lesson_id, 10),
+        };
+
+        if (empty($questions)) {
+            return response()->json(['status' => 'error', 'message' => 'No words found for this lesson'], 404);
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'data'   => [
+                'round'      => $round,
+                'max_hearts' => 3,
+                'questions'  => $questions,
+            ],
+        ]);
+    }
+
+    // GET /api/app/game/level-map/{lesson_id}  (auth required)
+    public function levelMap($lesson_id)
+    {
+        $user = Auth::user();
+
+        $rows = UserLessonRoundProgress::where('user_id', $user->id)
+            ->where('lesson_id', $lesson_id)
+            ->get()
+            ->keyBy('round_number');
+
+        if ($rows->isEmpty()) {
+            $rows->put(1, UserLessonRoundProgress::create([
+                'user_id' => $user->id, 'lesson_id' => $lesson_id,
+                'round_number' => 1, 'status' => 'unlocked',
+            ]));
+        }
+
+        $rounds = collect(range(1, 4))->map(function ($n) use ($rows) {
+            $row = $rows->get($n);
+            return [
+                'round'  => $n,
+                'status' => $row->status ?? 'locked',
+                'stars'  => $row->stars ?? 0,
+            ];
+        });
+
+        return response()->json(['status' => 'success', 'data' => $rounds]);
+    }
+
+    // POST /api/app/game/round/submit  (auth required)
+    // Body: { lesson_id, round, score, total, hearts_lost }
+    // Replaces the old 4-separate-POST pattern (xp/streak/lipto) with one
+    // atomic call for the round-based flow - pass/fail, stars, XP, Lipto,
+    // mystery box, streak, and next-round unlock all update together.
+    public function submitRound(Request $request)
+    {
+        $request->validate([
+            'lesson_id'   => 'required|integer',
+            'round'       => 'required|integer|min:1|max:4',
+            'score'       => 'required|integer|min:0',
+            'total'       => 'required|integer|min:1',
+            'hearts_lost' => 'required|integer|min:0|max:3',
+        ]);
+
+        $user   = Auth::user();
+        $round  = (int) $request->round;
+        $passed = $request->hearts_lost < 3;
+
+        $result = DB::transaction(function () use ($user, $request, $round, $passed) {
+            $progress = UserLessonRoundProgress::firstOrCreate(
+                ['user_id' => $user->id, 'lesson_id' => $request->lesson_id, 'round_number' => $round],
+                ['status' => $round === 1 ? 'unlocked' : 'locked']
+            );
+
+            $progress->attempts += 1;
+            $progress->last_attempt_at = now();
+
+            $xpEarned    = 0;
+            $liptoEarned = 0;
+            $mysteryBox  = null;
+            $stars       = $progress->stars;
+            $nextUnlocked = false;
+
+            if ($passed) {
+                $stars = max($stars, $this->starsForHeartsLost($request->hearts_lost));
+                $progress->status = 'passed';
+                $progress->stars  = $stars;
+                if ($progress->best_score === null || $request->score > $progress->best_score) {
+                    $progress->best_score = $request->score;
+                    $progress->best_total = $request->total;
+                    $progress->hearts_lost_best_attempt = $request->hearts_lost;
+                }
+
+                $xpEarned = (int) round(($request->score / $request->total) * 10);
+                $user->increment('points', $xpEarned);
+
+                $mysteryBox  = $this->rollMysteryBox();
+                $liptoEarned = $this->grantLiptoWithDailyCap($user, $mysteryBox['lipto'], "Round {$round} mystery box ({$mysteryBox['tier']})");
+                $mysteryBox['lipto'] = $liptoEarned; // reflect what was actually granted (may be capped)
+
+                if ($round < 4) {
+                    $nextRound = UserLessonRoundProgress::firstOrCreate(
+                        ['user_id' => $user->id, 'lesson_id' => $request->lesson_id, 'round_number' => $round + 1],
+                        ['status' => 'locked']
+                    );
+                    if ($nextRound->status === 'locked') {
+                        $nextRound->status = 'unlocked';
+                        $nextRound->save();
+                        $nextUnlocked = true;
+                    }
+                }
+            }
+
+            $progress->save();
+
+            // Any attempt (pass or fail) counts as today's practice, same as
+            // the standalone update_streak endpoint the old flow called separately.
+            $streakDays = $this->bumpStreak($user);
+
+            return compact('xpEarned', 'liptoEarned', 'mysteryBox', 'stars', 'nextUnlocked', 'streakDays');
+        });
+
+        return response()->json([
+            'status' => 'success',
+            'data'   => [
+                'passed'             => $passed,
+                'stars'              => $result['stars'],
+                'xp_earned'          => $result['xpEarned'],
+                'lipto_earned'       => $result['liptoEarned'],
+                'mystery_box'        => $result['mysteryBox'],
+                'next_round_unlocked'=> $result['nextUnlocked'],
+                'streak_days'        => $result['streakDays'],
+                'total_xp'           => $user->points,
+            ],
+        ]);
+    }
+
+    // Same day/yesterday logic as update_streak() below, factored out so
+    // submitRound() can update the streak in the same atomic call instead
+    // of relying on a separate client-fired POST.
+    private function bumpStreak(User $user): int
+    {
+        $today      = now()->toDateString();
+        $lastPlayed = optional($user->last_played_at)->toDateString();
+
+        if ($lastPlayed === $today) {
+            return $user->streak_days ?? 0;
+        }
+
+        $yesterday = now()->subDay()->toDateString();
+        $newStreak = ($lastPlayed === $yesterday) ? (($user->streak_days ?? 0) + 1) : 1;
+
+        $user->update(['streak_days' => $newStreak, 'last_played_at' => now()]);
+
+        return $newStreak;
+    }
+
+    // Mirrors LiptoController::earn()'s daily-cap logic so mystery-box
+    // rewards can't be farmed past the same DAILY_EARN_CAP by replaying
+    // easy rounds - must run inside the caller's existing DB::transaction.
+    private function grantLiptoWithDailyCap(User $user, int $amount, string $description): int
+    {
+        $locked = User::whereKey($user->id)->lockForUpdate()->first();
+
+        $dayStart = now('Asia/Dhaka')->startOfDay();
+        $earnedToday = (int) LiptoTransaction::where('user_id', $locked->id)
+            ->where('type', 'earn')
+            ->where('created_at', '>=', $dayStart)
+            ->sum('amount');
+
+        $grantable = max(0, min($amount, LiptoController::DAILY_EARN_CAP - $earnedToday));
+        if ($grantable === 0) {
+            return 0;
+        }
+
+        $locked->increment('lipto_balance', $grantable);
+
+        LiptoTransaction::create([
+            'user_id'       => $locked->id,
+            'amount'        => $grantable,
+            'type'          => 'earn',
+            'source'        => 'mystery_box',
+            'description'   => $description,
+            'balance_after' => $locked->lipto_balance,
+        ]);
+
+        return $grantable;
+    }
+
+    // 70% common / 25% rare / 5% epic - starter table, tune later.
+    private function rollMysteryBox(): array
+    {
+        $roll = rand(1, 100);
+        if ($roll <= 70) {
+            return ['tier' => 'common', 'lipto' => rand(5, 10)];
+        }
+        if ($roll <= 95) {
+            return ['tier' => 'rare', 'lipto' => rand(15, 25)];
+        }
+        return ['tier' => 'epic', 'lipto' => rand(40, 60)];
+    }
+
+    private function starsForHeartsLost(int $heartsLost): int
+    {
+        return match (true) {
+            $heartsLost === 0 => 3,
+            $heartsLost === 1 => 2,
+            default => 1,
+        };
     }
 
     // POST /api/game/xp  (auth required)

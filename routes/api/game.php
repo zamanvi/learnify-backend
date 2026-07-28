@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('game')->middleware(['grammer', 'throttle:60,1'])->group(function () {
     Route::get('/daily-word', [GameController::class, 'daily_word']);
     Route::get('/quiz/{lesson_id}', [GameController::class, 'quiz']);
+    Route::get('/round-quiz/{lesson_id}/{round}', [GameController::class, 'roundQuiz']);
     Route::get('/leaderboard', [GameController::class, 'leaderboard']);
 });
 
@@ -23,6 +24,10 @@ Route::prefix('app')->middleware(['app'])->group(function () {
             Route::post('/xp', [GameController::class, 'add_xp']);
             Route::get('/streak', [GameController::class, 'streak']);
             Route::post('/streak/update', [GameController::class, 'update_streak']);
+
+            // Round-based Quick Quiz (level-map + atomic submit)
+            Route::get('/level-map/{lesson_id}', [GameController::class, 'levelMap']);
+            Route::post('/round/submit', [GameController::class, 'submitRound']);
 
             // Lipto virtual currency
             Route::prefix('lipto')->group(function () {
