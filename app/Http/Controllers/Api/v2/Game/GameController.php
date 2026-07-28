@@ -143,6 +143,24 @@ class GameController extends Controller
     {
         $user = Auth::user();
 
+        // Same paywall as quiz()/roundQuiz() - without this, a locked
+        // Premium lesson's level map would render as if every round were
+        // playable, and only reject the player one tap later once they
+        // actually try to start Round 1. Auth is already guaranteed here
+        // (this route sits behind auth:sanctum), so check the unlock
+        // directly instead of the bearer-token-optional helper those two
+        // public endpoints need.
+        $lesson = Lesson::find($lesson_id);
+        if ($lesson && $lesson->is_premium) {
+            $unlocked = UnlockedLesson::where('user_id', $user->id)->where('lesson_id', $lesson_id)->exists();
+            if (!$unlocked) {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'এই লেসন Premium — আগে আনলক করো',
+                ], 403);
+            }
+        }
+
         $rows = UserLessonRoundProgress::where('user_id', $user->id)
             ->where('lesson_id', $lesson_id)
             ->get()
