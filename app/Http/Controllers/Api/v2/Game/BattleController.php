@@ -135,19 +135,21 @@ class BattleController extends Controller
             ]);
 
             BattleParticipant::create([
-                'battle_id'   => $battle->id,
-                'user_id'     => $creator->id,
-                'is_creator'  => true,
-                'status'      => 'joined',
-                'joined_at'   => now(),
+                'battle_id'       => $battle->id,
+                'user_id'         => $creator->id,
+                'is_creator'      => true,
+                'status'          => 'joined',
+                'joined_at'       => now(),
+                'lives_remaining' => $lives,
             ]);
 
             foreach ($inviteeIds as $inviteeId) {
                 BattleParticipant::create([
-                    'battle_id'  => $battle->id,
-                    'user_id'    => $inviteeId,
-                    'is_creator' => false,
-                    'status'     => 'invited',
+                    'battle_id'       => $battle->id,
+                    'user_id'         => $inviteeId,
+                    'is_creator'      => false,
+                    'status'          => 'invited',
+                    'lives_remaining' => $lives,
                 ]);
             }
 
@@ -247,11 +249,12 @@ class BattleController extends Controller
         }
 
         BattleParticipant::create([
-            'battle_id'  => $battle->id,
-            'user_id'    => $user->id,
-            'is_creator' => false,
-            'status'     => 'joined',
-            'joined_at'  => now(),
+            'battle_id'       => $battle->id,
+            'user_id'         => $user->id,
+            'is_creator'      => false,
+            'status'          => 'joined',
+            'joined_at'       => now(),
+            'lives_remaining' => $battle->lives,
         ]);
 
         $creator = User::find($battle->challenger_id);
@@ -277,9 +280,10 @@ class BattleController extends Controller
     public function submit(Request $request, int $id)
     {
         $request->validate([
-            'score'    => 'required|integer|min:0',
-            'total'    => 'required|integer|min:1',
-            'time_sec' => 'required|integer|min:0',
+            'score'           => 'required|integer|min:0',
+            'total'           => 'required|integer|min:1',
+            'time_sec'        => 'required|integer|min:0',
+            'lives_remaining' => 'nullable|integer|min:0',
         ]);
 
         $user   = $request->user();
@@ -411,6 +415,9 @@ class BattleController extends Controller
             $participant->time_sec    = $request->time_sec;
             $participant->status      = 'submitted';
             $participant->finished_at = now();
+            if ($request->filled('lives_remaining')) {
+                $participant->lives_remaining = $request->input('lives_remaining');
+            }
             $participant->save();
 
             $allSubmitted = $battle->battle_participants()->where('status', '!=', 'submitted')->doesntExist();
