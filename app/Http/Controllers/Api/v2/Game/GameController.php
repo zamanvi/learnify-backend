@@ -17,18 +17,27 @@ use Laravel\Sanctum\PersonalAccessToken;
 
 class GameController extends Controller
 {
+    // roundQuiz()/quiz() sit on public routes (no auth:sanctum) so a guest
+    // can still fetch a free lesson's quiz - this resolves whoever's bearer
+    // token (if any) came along for the ride, same technique both the
+    // Premium-unlock check and the round-sequence check below need.
+    private function resolveUserFromBearer(Request $request): ?User
+    {
+        $bearer = $request->bearerToken();
+        if (!$bearer) {
+            return null;
+        }
+
+        return PersonalAccessToken::findToken($bearer)?->tokenable;
+    }
+
     // Same bearer-token-optional unlock check WordController uses for the
     // word-list gate - the quiz endpoint needs the identical guard, otherwise
     // it's a back door around the Premium paywall (quiz on the full word set
     // without ever unlocking).
     private function isLessonUnlockedByRequest(Request $request, $lessonId): bool
     {
-        $bearer = $request->bearerToken();
-        if (!$bearer) {
-            return false;
-        }
-
-        $user = PersonalAccessToken::findToken($bearer)?->tokenable;
+        $user = $this->resolveUserFromBearer($request);
         if (!$user) {
             return false;
         }
@@ -36,6 +45,39 @@ class GameController extends Controller
         return UnlockedLesson::where('user_id', $user->id)
             ->where('lesson_id', $lessonId)
             ->exists();
+    }
+
+    // Row-locks (or creates, retrying once on a lost create race) a round's
+    // progress row - shared by levelMap()'s first-visit bootstrap and
+    // submitRound()'s read-modify-write, both of which used to be plain
+    // unlocked reads/creates vulnerable to the same race BattleController's
+    // join() had before it was fixed this session.
+    private function getOrCreateRoundProgressLocked(int $userId, int $lessonId, int $round, string $defaultStatus): UserLessonRoundProgress
+    {
+        $progress = UserLessonRoundProgress::where('user_id', $userId)
+            ->where('lesson_id', $lessonId)
+            ->where('round_number', $round)
+            ->lockForUpdate()
+            ->first();
+
+        if ($progress) {
+            return $progress;
+        }
+
+        try {
+            return UserLessonRoundProgress::create([
+                'user_id' => $userId, 'lesson_id' => $lessonId,
+                'round_number' => $round, 'status' => $defaultStatus,
+            ]);
+        } catch (\Illuminate\Database\QueryException $e) {
+            // Lost the create race to a concurrent request - fetch what it
+            // just committed instead of bubbling up an unhandled 500.
+            return UserLessonRoundProgress::where('user_id', $userId)
+                ->where('lesson_id', $lessonId)
+                ->where('round_number', $round)
+                ->lockForUpdate()
+                ->firstOrFail();
+        }
     }
 
     // GET /api/game/daily-word
@@ -117,6 +159,24 @@ class GameController extends Controller
             ], 403);
         }
 
+        // Sequential round-unlock was previously enforced only by the
+        // Android level-map UI graying out locked rounds - a direct API
+        // call could fetch (and via submitRound(), pass+reward) round 4
+        // without ever touching 1-3. Round 1 has no prerequisite.
+        if ($round > 1) {
+            $user = $this->resolveUserFromBearer($request);
+            if (!$user) {
+                return response()->json(['status' => 'error', 'message' => 'লগইন করো আগে'], 401);
+            }
+            $progress = UserLessonRoundProgress::where('user_id', $user->id)
+                ->where('lesson_id', $lesson_id)
+                ->where('round_number', $round)
+                ->first();
+            if (!$progress || $progress->status === 'locked') {
+                return response()->json(['status' => 'error', 'message' => 'আগের রাউন্ড ক্লিয়ার করো আগে'], 403);
+            }
+        }
+
         $questions = match ($round) {
             1 => $builder->buildQuestionsFromWordIds($builder->selectWordIds($lesson_id, 10)),
             2 => $builder->buildReadingQuestions($lesson_id, 20),
@@ -161,17 +221,18 @@ class GameController extends Controller
             }
         }
 
-        $rows = UserLessonRoundProgress::where('user_id', $user->id)
-            ->where('lesson_id', $lesson_id)
-            ->get()
-            ->keyBy('round_number');
+        $rows = DB::transaction(function () use ($user, $lesson_id) {
+            $existing = UserLessonRoundProgress::where('user_id', $user->id)
+                ->where('lesson_id', $lesson_id)
+                ->get()
+                ->keyBy('round_number');
 
-        if ($rows->isEmpty()) {
-            $rows->put(1, UserLessonRoundProgress::create([
-                'user_id' => $user->id, 'lesson_id' => $lesson_id,
-                'round_number' => 1, 'status' => 'unlocked',
-            ]));
-        }
+            if ($existing->isEmpty()) {
+                $existing->put(1, $this->getOrCreateRoundProgressLocked($user->id, $lesson_id, 1, 'unlocked'));
+            }
+
+            return $existing;
+        });
 
         $rounds = collect(range(1, 4))->map(function ($n) use ($rows) {
             $row = $rows->get($n);
@@ -196,19 +257,33 @@ class GameController extends Controller
             'lesson_id'   => 'required|integer',
             'round'       => 'required|integer|min:1|max:4',
             'score'       => 'required|integer|min:0',
-            'total'       => 'required|integer|min:1',
+            'total'       => 'required|integer|min:1|max:255',
             'hearts_lost' => 'required|integer|min:0|max:3',
         ]);
+
+        if ($request->score > $request->total) {
+            return response()->json(['status' => 'error', 'message' => 'অবৈধ score'], 422);
+        }
+
+        if (!Lesson::find($request->lesson_id)) {
+            return response()->json(['status' => 'error', 'message' => 'Lesson খুঁজে পাওয়া যায়নি'], 404);
+        }
 
         $user   = Auth::user();
         $round  = (int) $request->round;
         $passed = $request->hearts_lost < 3;
 
         $result = DB::transaction(function () use ($user, $request, $round, $passed) {
-            $progress = UserLessonRoundProgress::firstOrCreate(
-                ['user_id' => $user->id, 'lesson_id' => $request->lesson_id, 'round_number' => $round],
-                ['status' => $round === 1 ? 'unlocked' : 'locked']
+            $progress = $this->getOrCreateRoundProgressLocked(
+                $user->id, $request->lesson_id, $round, $round === 1 ? 'unlocked' : 'locked'
             );
+
+            // Same sequential-unlock rule as roundQuiz() - without this, a
+            // direct API call could submit (and get rewarded for) a round
+            // whose prerequisite was never actually cleared.
+            if ($round > 1 && $progress->status === 'locked') {
+                return ['locked' => true];
+            }
 
             $progress->attempts += 1;
             $progress->last_attempt_at = now();
@@ -237,9 +312,8 @@ class GameController extends Controller
                 $mysteryBox['lipto'] = $liptoEarned; // reflect what was actually granted (may be capped)
 
                 if ($round < 4) {
-                    $nextRound = UserLessonRoundProgress::firstOrCreate(
-                        ['user_id' => $user->id, 'lesson_id' => $request->lesson_id, 'round_number' => $round + 1],
-                        ['status' => 'locked']
+                    $nextRound = $this->getOrCreateRoundProgressLocked(
+                        $user->id, $request->lesson_id, $round + 1, 'locked'
                     );
                     if ($nextRound->status === 'locked') {
                         $nextRound->status = 'unlocked';
@@ -257,6 +331,10 @@ class GameController extends Controller
 
             return compact('xpEarned', 'liptoEarned', 'mysteryBox', 'stars', 'nextUnlocked', 'streakDays');
         });
+
+        if (isset($result['locked'])) {
+            return response()->json(['status' => 'error', 'message' => 'আগের রাউন্ড ক্লিয়ার করো আগে'], 403);
+        }
 
         return response()->json([
             'status' => 'success',
@@ -414,35 +492,21 @@ class GameController extends Controller
     }
 
     // POST /api/game/streak/update  (auth required)
+    // Kept for old app builds that still POST this separately - submitRound()
+    // now calls bumpStreak() directly instead of relying on this being
+    // called as a follow-up request.
     public function update_streak(Request $request)
     {
-        $user       = Auth::user();
-        $today      = now()->toDateString();
-        $lastPlayed = optional($user->last_played_at)->toDateString();
+        $user = Auth::user();
+        $alreadyUpdatedToday = optional($user->last_played_at)->toDateString() === now()->toDateString();
 
-        if ($lastPlayed === $today) {
-            return response()->json([
-                'status' => 'success',
-                'data'   => [
-                    'streak_days' => $user->streak_days ?? 0,
-                    'message'     => 'already_updated',
-                ],
-            ]);
-        }
-
-        $yesterday = now()->subDay()->toDateString();
-        $newStreak = ($lastPlayed === $yesterday) ? (($user->streak_days ?? 0) + 1) : 1;
-
-        $user->update([
-            'streak_days'    => $newStreak,
-            'last_played_at' => now(),
-        ]);
+        $streakDays = $this->bumpStreak($user);
 
         return response()->json([
             'status' => 'success',
-            'data'   => [
-                'streak_days' => $newStreak,
-            ],
+            'data'   => $alreadyUpdatedToday
+                ? ['streak_days' => $streakDays, 'message' => 'already_updated']
+                : ['streak_days' => $streakDays],
         ]);
     }
 
