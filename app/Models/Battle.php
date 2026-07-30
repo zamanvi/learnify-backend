@@ -12,11 +12,12 @@ class Battle extends Model
         'opponent_score', 'opponent_total', 'opponent_time_sec',
         'winner_id',
         'mode', 'question_count', 'lives', 'question_word_ids',
-        'invite_code', 'max_participants',
+        'invite_code', 'max_participants', 'allow_code_join',
     ];
 
     protected $casts = [
         'question_word_ids' => 'array',
+        'allow_code_join'   => 'boolean',
     ];
 
     public function challenger()

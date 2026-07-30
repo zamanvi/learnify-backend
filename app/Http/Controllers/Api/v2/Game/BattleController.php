@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Battle;
 use App\Models\BattleParticipant;
 use App\Models\Lesson;
+use App\Models\UnlockedLesson;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -22,13 +23,17 @@ class BattleController extends Controller
         $request->validate([
             'opponent_id' => 'required|integer|exists:users,id',
             'lesson_id'   => 'required|integer',
+        ], [
+            'opponent_id.required' => 'প্রতিপক্ষ বেছে নাও',
+            'opponent_id.exists'   => 'ইউজার খুঁজে পাওয়া যায়নি',
+            'lesson_id.required'   => 'Lesson বেছে নাও',
         ]);
 
         $challenger = $request->user();
         $opponentId = (int) $request->opponent_id;
 
         if ($challenger->id === $opponentId) {
-            return response()->json(['status' => 'error', 'message' => 'Cannot challenge yourself'], 422);
+            return response()->json(['status' => 'error', 'message' => 'নিজেকে চ্যালেঞ্জ করা যাবে না'], 422);
         }
 
         // Check for existing active battle between them
@@ -41,7 +46,7 @@ class BattleController extends Controller
         if ($existing) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'A battle is already in progress',
+                'message' => 'এর সাথে ইতিমধ্যে একটা battle চলছে',
                 'battle_id' => $existing->id,
             ], 409);
         }
@@ -89,6 +94,16 @@ class BattleController extends Controller
             'lives'           => 'nullable|integer|min:1|max:50',
             'mode'            => 'nullable|string|in:async,live',
             'allow_code_join' => 'nullable|boolean',
+        ], [
+            'lesson_id.required'   => 'একটা Lesson বেছে নাও',
+            'invitee_ids.*.exists' => 'বন্ধু খুঁজে পাওয়া যায়নি',
+            'question_count.integer' => 'প্রশ্নের সংখ্যা সঠিক না',
+            'question_count.min'   => 'কমপক্ষে ১টা প্রশ্ন দাও',
+            'question_count.max'   => 'সর্বোচ্চ ৫০টা প্রশ্ন দেওয়া যাবে',
+            'lives.integer'        => 'Lives সঠিক সংখ্যা না',
+            'lives.min'            => 'Lives কমপক্ষে ১ দাও',
+            'lives.max'            => 'Lives সর্বোচ্চ ৫০ দাও',
+            'mode.in'              => 'সঠিক মোড বেছে নাও',
         ]);
 
         $creator = $request->user();
@@ -96,6 +111,23 @@ class BattleController extends Controller
 
         if ($mode === 'live') {
             return response()->json(['status' => 'error', 'message' => 'লাইভ মোড শীঘ্রই আসছে 🚀'], 422);
+        }
+
+        // Same paywall as GameController::quiz()/levelMap() - without this a
+        // locked Premium lesson's challenge could be created and shared
+        // (getting a real battle_id/invite_code) and only fail once someone
+        // actually tries to play it, leaving the battle permanently stuck.
+        $lesson = Lesson::find($request->lesson_id);
+        if ($lesson && $lesson->is_premium) {
+            $unlocked = UnlockedLesson::where('user_id', $creator->id)
+                ->where('lesson_id', $request->lesson_id)
+                ->exists();
+            if (!$unlocked) {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'এই লেসন Premium — আগে আনলক করো',
+                ], 403);
+            }
         }
 
         $inviteeIds = collect($request->input('invitee_ids', []))
@@ -112,49 +144,83 @@ class BattleController extends Controller
         if (empty($wordIds)) {
             return response()->json(['status' => 'error', 'message' => 'No words found for this lesson'], 404);
         }
+        // Store the ACTUAL delivered count, not the requested one - a lesson
+        // with fewer active words than requested silently returns fewer IDs,
+        // and resolveCode() shows question_count to a prospective joiner
+        // before they commit, so that promise has to be real.
+        $actualQuestionCount = count($wordIds);
 
+        // A code must always be joinable if it exists at all - "allow code
+        // join" OFF with an empty invitee list would otherwise still hand
+        // back a code (old fallback below) while max_participants locks the
+        // battle to the creator's single slot, a permanent dead end. Treat
+        // "no invitees yet" as an implicit code-join-enabled state so the
+        // code shown to the user always actually works. Android also guards
+        // this client-side by forcing the toggle on when invitees is empty.
+        $codeJoinEffective = $allowCodeJoin || $inviteeIds->isEmpty();
+
+        $battle = null;
         $inviteCode = null;
-        if ($allowCodeJoin || $inviteeIds->isEmpty()) {
-            do {
+        $attempts = 0;
+        while ($battle === null) {
+            $attempts++;
+            if ($codeJoinEffective) {
                 $inviteCode = strtoupper(Str::random(8));
-            } while (Battle::where('invite_code', $inviteCode)->exists());
-        }
-
-        $battle = DB::transaction(function () use ($creator, $request, $mode, $questionCount, $lives, $wordIds, $inviteCode, $inviteeIds, $allowCodeJoin) {
-            $battle = Battle::create([
-                'challenger_id'      => $creator->id,
-                'opponent_id'        => null,
-                'lesson_id'          => $request->lesson_id,
-                'status'             => 'pending',
-                'mode'               => $mode,
-                'question_count'     => $questionCount,
-                'lives'              => $lives,
-                'question_word_ids'  => $wordIds,
-                'invite_code'        => $inviteCode,
-                'max_participants'   => $allowCodeJoin ? null : ($inviteeIds->count() + 1),
-            ]);
-
-            BattleParticipant::create([
-                'battle_id'       => $battle->id,
-                'user_id'         => $creator->id,
-                'is_creator'      => true,
-                'status'          => 'joined',
-                'joined_at'       => now(),
-                'lives_remaining' => $lives,
-            ]);
-
-            foreach ($inviteeIds as $inviteeId) {
-                BattleParticipant::create([
-                    'battle_id'       => $battle->id,
-                    'user_id'         => $inviteeId,
-                    'is_creator'      => false,
-                    'status'          => 'invited',
-                    'lives_remaining' => $lives,
-                ]);
             }
 
-            return $battle;
-        });
+            try {
+                $battle = DB::transaction(function () use (
+                    $creator, $request, $mode, $actualQuestionCount, $lives,
+                    $wordIds, $inviteCode, $inviteeIds, $codeJoinEffective
+                ) {
+                    $battle = Battle::create([
+                        'challenger_id'      => $creator->id,
+                        'opponent_id'        => null,
+                        'lesson_id'          => $request->lesson_id,
+                        'status'             => 'pending',
+                        'mode'               => $mode,
+                        'question_count'     => $actualQuestionCount,
+                        'lives'              => $lives,
+                        'question_word_ids'  => $wordIds,
+                        'invite_code'        => $inviteCode,
+                        'max_participants'   => $codeJoinEffective ? null : ($inviteeIds->count() + 1),
+                        'allow_code_join'    => $codeJoinEffective,
+                    ]);
+
+                    BattleParticipant::create([
+                        'battle_id'       => $battle->id,
+                        'user_id'         => $creator->id,
+                        'is_creator'      => true,
+                        'status'          => 'joined',
+                        'joined_at'       => now(),
+                        'lives_remaining' => $lives,
+                    ]);
+
+                    foreach ($inviteeIds as $inviteeId) {
+                        BattleParticipant::create([
+                            'battle_id'       => $battle->id,
+                            'user_id'         => $inviteeId,
+                            'is_creator'      => false,
+                            'status'          => 'invited',
+                            'lives_remaining' => $lives,
+                        ]);
+                    }
+
+                    return $battle;
+                });
+            } catch (\Illuminate\Database\QueryException $e) {
+                // invite_code has a DB-level unique constraint - a genuine
+                // collision (astronomically unlikely at 36^8 combinations)
+                // used to bubble up as an unhandled 500. Retry with a fresh
+                // code a few times instead of failing the whole request.
+                $isInviteCodeCollision = $codeJoinEffective
+                    && str_contains(strtolower($e->getMessage()), 'invite_code');
+                if ($isInviteCodeCollision && $attempts < 5) {
+                    continue;
+                }
+                throw $e;
+            }
+        }
 
         if ($inviteeIds->isNotEmpty()) {
             $invitees = User::whereIn('id', $inviteeIds)->get();
@@ -189,7 +255,9 @@ class BattleController extends Controller
     // before the user commits to joining (same pattern as Lipto findFriend).
     public function resolveCode(Request $request)
     {
-        $request->validate(['code' => 'required|string']);
+        $request->validate(['code' => 'required|string'], [
+            'code.required' => 'কোড লিখো',
+        ]);
 
         $battle = Battle::where('invite_code', strtoupper($request->code))->first();
         if (!$battle) {
@@ -224,49 +292,75 @@ class BattleController extends Controller
     // body: { code: string }
     public function join(Request $request)
     {
-        $request->validate(['code' => 'required|string']);
-        $user = $request->user();
-
-        $battle = Battle::where('invite_code', strtoupper($request->code))->first();
-        if (!$battle) {
-            return response()->json(['status' => 'error', 'message' => 'কোড খুঁজে পাওয়া যায়নি'], 404);
-        }
-        if (!in_array($battle->status, ['pending', 'challenger_done'])) {
-            return response()->json(['status' => 'error', 'message' => 'এই battle আর যোগ দেওয়া যাবে না'], 422);
-        }
-        if ($battle->challenger_id === $user->id) {
-            return response()->json(['status' => 'error', 'message' => 'এটা তোমারই তৈরি battle'], 422);
-        }
-
-        $existing = BattleParticipant::where('battle_id', $battle->id)->where('user_id', $user->id)->first();
-        if ($existing) {
-            return response()->json(['status' => 'success', 'battle' => $this->formatBattle($battle->fresh(), $user->id)]);
-        }
-
-        $participantCount = $battle->battle_participants()->count();
-        if ($battle->max_participants && $participantCount >= $battle->max_participants) {
-            return response()->json(['status' => 'error', 'message' => 'এই battle পূর্ণ হয়ে গেছে'], 422);
-        }
-
-        BattleParticipant::create([
-            'battle_id'       => $battle->id,
-            'user_id'         => $user->id,
-            'is_creator'      => false,
-            'status'          => 'joined',
-            'joined_at'       => now(),
-            'lives_remaining' => $battle->lives,
+        $request->validate(['code' => 'required|string'], [
+            'code.required' => 'কোড লিখো',
         ]);
+        $user = $request->user();
+        $code = strtoupper($request->code);
 
-        $creator = User::find($battle->challenger_id);
-        if ($creator && $creator->device_token) {
-            try {
-                (new FcmService())->sendToDevice(
-                    $creator->device_token,
-                    "🎉 নতুন খেলোয়াড় যোগ দিয়েছে!",
-                    "{$user->name} তোমার battle এ যোগ দিয়েছে!",
-                    ['type' => 'battle', 'battle_id' => (string) $battle->id]
-                );
-            } catch (\Exception $e) { /* non-critical */ }
+        // Row-locked inside a transaction so two users joining the last open
+        // slot at the same moment can't both pass the capacity check before
+        // either insert commits (previously a plain count-then-insert with
+        // no lock, allowing a battle to exceed max_participants).
+        $outcome = DB::transaction(function () use ($code, $user) {
+            $battle = Battle::where('invite_code', $code)->lockForUpdate()->first();
+            if (!$battle) {
+                return ['status' => 'not_found'];
+            }
+            if (!in_array($battle->status, ['pending', 'challenger_done'])) {
+                return ['status' => 'closed'];
+            }
+            if ($battle->challenger_id === $user->id) {
+                return ['status' => 'self'];
+            }
+
+            $existing = BattleParticipant::where('battle_id', $battle->id)->where('user_id', $user->id)->first();
+            if ($existing) {
+                return ['status' => 'already', 'battle' => $battle];
+            }
+
+            $participantCount = $battle->battle_participants()->count();
+            if ($battle->max_participants && $participantCount >= $battle->max_participants) {
+                return ['status' => 'full'];
+            }
+
+            BattleParticipant::create([
+                'battle_id'       => $battle->id,
+                'user_id'         => $user->id,
+                'is_creator'      => false,
+                'status'          => 'joined',
+                'joined_at'       => now(),
+                'lives_remaining' => $battle->lives,
+            ]);
+
+            return ['status' => 'joined', 'battle' => $battle];
+        });
+
+        switch ($outcome['status']) {
+            case 'not_found':
+                return response()->json(['status' => 'error', 'message' => 'কোড খুঁজে পাওয়া যায়নি'], 404);
+            case 'closed':
+                return response()->json(['status' => 'error', 'message' => 'এই battle আর যোগ দেওয়া যাবে না'], 422);
+            case 'self':
+                return response()->json(['status' => 'error', 'message' => 'এটা তোমারই তৈরি battle'], 422);
+            case 'full':
+                return response()->json(['status' => 'error', 'message' => 'এই battle পূর্ণ হয়ে গেছে'], 422);
+        }
+
+        $battle = $outcome['battle'];
+
+        if ($outcome['status'] === 'joined') {
+            $creator = User::find($battle->challenger_id);
+            if ($creator && $creator->device_token) {
+                try {
+                    (new FcmService())->sendToDevice(
+                        $creator->device_token,
+                        "🎉 নতুন খেলোয়াড় যোগ দিয়েছে!",
+                        "{$user->name} তোমার battle এ যোগ দিয়েছে!",
+                        ['type' => 'battle', 'battle_id' => (string) $battle->id]
+                    );
+                } catch (\Exception $e) { /* non-critical */ }
+            }
         }
 
         return response()->json([
@@ -284,6 +378,14 @@ class BattleController extends Controller
             'total'           => 'required|integer|min:1',
             'time_sec'        => 'required|integer|min:0',
             'lives_remaining' => 'nullable|integer|min:0',
+        ], [
+            'score.required'    => 'Score দরকার',
+            'score.integer'     => 'Score সঠিক সংখ্যা না',
+            'total.required'    => 'Total দরকার',
+            'total.integer'     => 'Total সঠিক সংখ্যা না',
+            'total.min'         => 'Total কমপক্ষে ১ হতে হবে',
+            'time_sec.required' => 'সময় দরকার',
+            'lives_remaining.integer' => 'Lives সঠিক সংখ্যা না',
         ]);
 
         $user   = $request->user();
@@ -291,6 +393,11 @@ class BattleController extends Controller
 
         if (!in_array($battle->status, ['pending', 'challenger_done'])) {
             return response()->json(['status' => 'error', 'message' => 'Battle already completed'], 422);
+        }
+
+        $invalid = $this->validateSubmissionAgainstBattle($request, $battle);
+        if ($invalid) {
+            return $invalid;
         }
 
         if ($battle->battle_participants()->exists()) {
@@ -364,7 +471,11 @@ class BattleController extends Controller
                     $q2->where('user_id', $user->id)->where('status', '!=', 'submitted');
                 });
             })
-            ->with(['challenger:id,name,points'])
+            ->with([
+                'challenger:id,name,points',
+                'opponent:id,name,points',
+                'battle_participants.user:id,name,points',
+            ])
             ->latest()
             ->get();
 
@@ -385,7 +496,11 @@ class BattleController extends Controller
                   ->orWhere('opponent_id', $user->id)
                   ->orWhereHas('battle_participants', fn($q2) => $q2->where('user_id', $user->id));
             })
-            ->with(['challenger:id,name,points', 'opponent:id,name,points'])
+            ->with([
+                'challenger:id,name,points',
+                'opponent:id,name,points',
+                'battle_participants.user:id,name,points',
+            ])
             ->latest()
             ->limit(20)
             ->get();
@@ -397,6 +512,37 @@ class BattleController extends Controller
     }
 
     // ── Helpers ──────────────────────────────────────────────────
+
+    // Bounds-checks a submitted result against the battle it belongs to.
+    // This is not full server-side re-grading (individual question
+    // correctness is still trusted from the client, same model the whole
+    // quiz system uses - see QuizQuestionBuilder's buildWritingQuestions
+    // comment) but it closes the crude version of the exploit: a modified
+    // client claiming e.g. score=50/total=1, or reporting more lives left
+    // than the battle ever granted.
+    private function validateSubmissionAgainstBattle(Request $request, Battle $battle)
+    {
+        if ((int) $request->score > (int) $request->total) {
+            return response()->json(['status' => 'error', 'message' => 'অবৈধ score'], 422);
+        }
+
+        // total must not exceed the actual question set - but CAN be less,
+        // because running out of Lives ends the quiz early on purpose
+        // (QuizActivity.java sends `attempted`, not the full question
+        // count, whenever livesRemaining hits 0 before the last question).
+        // An exact-match check here would reject every legitimate
+        // lives-exhausted submission.
+        if ($battle->question_word_ids && (int) $request->total > count($battle->question_word_ids)) {
+            return response()->json(['status' => 'error', 'message' => 'অবৈধ ফলাফল — প্রশ্নের সংখ্যা মিলছে না'], 422);
+        }
+
+        if ($request->filled('lives_remaining') && $battle->lives !== null
+            && (int) $request->lives_remaining > $battle->lives) {
+            return response()->json(['status' => 'error', 'message' => 'অবৈধ lives'], 422);
+        }
+
+        return null;
+    }
 
     private function submitParticipant(Request $request, Battle $battle, User $user)
     {
@@ -469,7 +615,11 @@ class BattleController extends Controller
 
     private function formatBattle(Battle $battle, int $myId): array
     {
-        if ($battle->battle_participants()->exists()) {
+        if (!$battle->relationLoaded('battle_participants')) {
+            $battle->load('battle_participants.user:id,name,points');
+        }
+
+        if ($battle->battle_participants->isNotEmpty()) {
             return $this->formatBattleMulti($battle, $myId);
         }
 
@@ -503,7 +653,11 @@ class BattleController extends Controller
 
     private function formatBattleMulti(Battle $battle, int $myId): array
     {
-        $participants = $battle->battle_participants()->with('user:id,name,points')->get();
+        // Already eager-loaded by formatBattle() (either via the caller's
+        // with(['battle_participants.user']) or the relationLoaded() guard
+        // above) - accessing the relation here re-queries only if neither
+        // of those already populated it, never once per battle in a list.
+        $participants = $battle->battle_participants;
 
         $result = null;
         if ($battle->status === 'completed') {
