@@ -21,10 +21,20 @@ class LiptoController extends Controller
             ->get(['id', 'amount', 'type', 'source', 'description', 'balance_after', 'created_at']);
 
         return response()->json([
-            'status'  => 'success',
-            'balance' => (int) $user->lipto_balance,
-            'recent'  => $recent,
+            'status'      => 'success',
+            'balance'     => (int) $user->lipto_balance,
+            'max_balance' => (int) $user->lipto_max_balance,
+            'recent'      => $recent,
         ]);
+    }
+
+    // Tier badges are meant to be a one-way ladder (never demote a user just
+    // because they spent/gifted Lipto back down), so we track the highest
+    // balance ever reached separately from the live spendable balance.
+    private static function bumpMaxBalance(int $userId, int $balance): void
+    {
+        DB::table('users')->where('id', $userId)
+            ->update(['lipto_max_balance' => DB::raw('GREATEST(lipto_max_balance, ' . $balance . ')')]);
     }
 
     // GET /api/v2/game/lipto/find-friend?code=XXXXXX
@@ -92,6 +102,7 @@ class LiptoController extends Controller
             $grantable = min($amount, self::DAILY_EARN_CAP - $earnedToday);
 
             $locked->increment('lipto_balance', $grantable);
+            self::bumpMaxBalance($locked->id, (int) $locked->lipto_balance);
 
             LiptoTransaction::create([
                 'user_id'       => $locked->id,
@@ -114,9 +125,10 @@ class LiptoController extends Controller
         }
 
         return response()->json([
-            'status'  => 'success',
-            'earned'  => $result['earned'],
-            'balance' => $result['balance'],
+            'status'      => 'success',
+            'earned'      => $result['earned'],
+            'balance'     => $result['balance'],
+            'max_balance' => max($result['balance'], (int) $user->lipto_max_balance),
         ]);
     }
 
@@ -213,6 +225,7 @@ class LiptoController extends Controller
 
             $lockedSender->decrement('lipto_balance', $amount);
             $receiver->increment('lipto_balance', $amount);
+            self::bumpMaxBalance($receiver->id, (int) $receiver->lipto_balance);
 
             LiptoTransaction::create([
                 'user_id'         => $lockedSender->id,
