@@ -93,7 +93,12 @@ class WordController extends Controller
      */
     public function store(Request $request)
     {
-        $data = $request->except('_token');
+        $request->validate(['image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:1024']);
+
+        $data = $request->except('_token', 'image');
+        if ($request->hasFile('image')) {
+            $data['image'] = upload_file($request->file('image'));
+        }
 
         $this->wordRepository->store($data);
         return back();
@@ -131,7 +136,13 @@ class WordController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        $data = $request->except('_token');
+        $request->validate(['image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:1024']);
+
+        $data = $request->except('_token', 'image');
+        if ($request->hasFile('image')) {
+            $data['image'] = upload_file($request->file('image'));
+        }
+
         $this->wordRepository->update($id, $data);
         return back();
     }

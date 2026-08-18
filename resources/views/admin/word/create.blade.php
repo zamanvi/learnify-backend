@@ -22,7 +22,7 @@
                             For <strong>Verb</strong>: Word = V1, Synonyms = V2, Antonyms = V3<br>
                             For <strong>Vocabulary</strong>: Word, Meaning, Synonyms, Antonyms
                         </p>
-                        <form method="POST" action="{{ route('words.store') }}">
+                        <form method="POST" action="{{ route('words.store') }}" enctype="multipart/form-data">
                             @csrf
                             <input hidden name="lesson_id" value="{{ $lesson->id }}" />
                             <div class="form-group">
@@ -44,6 +44,11 @@
                                 <label for="antonyms">Antonyms / V3</label>
                                 <input type="text" name="antonyms" class="form-control" id="antonyms"
                                     placeholder="Antonyms (vocabulary) or V3 past participle (verb)">
+                            </div>
+                            <div class="form-group">
+                                <label for="image">Picture (for the Picture quiz round)</label>
+                                <input type="file" name="image" class="form-control" id="image" accept="image/*">
+                                <small class="text-muted">Optional. Only words with a picture appear in Round 3 (Picture).</small>
                             </div>
                             <input type="submit" class="btn btn-primary" value="Submit" />
                             <input type="reset" class="btn iq-bg-danger" value="Cancel" />

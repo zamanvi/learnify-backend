@@ -143,11 +143,11 @@ class GameController extends Controller
     }
 
     // GET /api/game/round-quiz/{lesson_id}/{round}
-    // round: 1=MCQ, 2=Reading, 3=Listening, 4=Writing
+    // round: 1=MCQ, 2=Reading, 3=Picture, 4=Listening, 5=Writing
     public function roundQuiz($lesson_id, $round, Request $request, QuizQuestionBuilder $builder)
     {
         $round = (int) $round;
-        if ($round < 1 || $round > 4) {
+        if ($round < 1 || $round > 5) {
             return response()->json(['status' => 'error', 'message' => 'Invalid round'], 422);
         }
 
@@ -159,12 +159,17 @@ class GameController extends Controller
             ], 403);
         }
 
+        // Resolved for every round (not just round>1) - round 1 is reachable
+        // by guests (bearer optional, may be null), but a logged-in user's
+        // id is also needed here to drive selectWordIdsForUser()'s anti-repeat
+        // rotation below, not just the sequential-unlock check.
+        $user = $this->resolveUserFromBearer($request);
+
         // Sequential round-unlock was previously enforced only by the
         // Android level-map UI graying out locked rounds - a direct API
-        // call could fetch (and via submitRound(), pass+reward) round 4
-        // without ever touching 1-3. Round 1 has no prerequisite.
+        // call could fetch (and via submitRound(), pass+reward) round 5
+        // without ever touching 1-4. Round 1 has no prerequisite.
         if ($round > 1) {
-            $user = $this->resolveUserFromBearer($request);
             if (!$user) {
                 return response()->json(['status' => 'error', 'message' => 'লগইন করো আগে'], 401);
             }
@@ -178,15 +183,20 @@ class GameController extends Controller
         }
 
         $questions = match ($round) {
-            1 => $builder->buildQuestionsFromWordIds($builder->selectWordIds($lesson_id, 10)),
-            2 => $builder->buildReadingQuestions($lesson_id, 20),
-            3 => $builder->buildListeningQuestions($lesson_id, 10),
-            4 => $builder->buildWritingQuestions($lesson_id, 10),
+            1 => $builder->buildQuestionsFromWordIds($builder->selectWordIdsForUser($user?->id, $lesson_id, 10)),
+            2 => $builder->buildReadingQuestions($user?->id, $lesson_id, 12),
+            3 => $builder->buildPictureQuestions($user?->id, $lesson_id, 10),
+            4 => $builder->buildListeningQuestions($user?->id, $lesson_id, 10),
+            5 => $builder->buildWritingQuestions($user?->id, $lesson_id, 10),
         };
 
         if (empty($questions)) {
             return response()->json(['status' => 'error', 'message' => 'No words found for this lesson'], 404);
         }
+
+        // Record exposure so the next call for this user rotates through
+        // the rest of the lesson instead of re-drawing the same words.
+        $builder->markWordsShown($user?->id, collect($questions)->pluck('word_id')->filter()->values()->toArray());
 
         return response()->json([
             'status' => 'success',
@@ -234,7 +244,7 @@ class GameController extends Controller
             return $existing;
         });
 
-        $rounds = collect(range(1, 4))->map(function ($n) use ($rows) {
+        $rounds = collect(range(1, 5))->map(function ($n) use ($rows) {
             $row = $rows->get($n);
             return [
                 'round'  => $n,
@@ -255,7 +265,7 @@ class GameController extends Controller
     {
         $request->validate([
             'lesson_id'   => 'required|integer',
-            'round'       => 'required|integer|min:1|max:4',
+            'round'       => 'required|integer|min:1|max:5',
             'score'       => 'required|integer|min:0',
             'total'       => 'required|integer|min:1|max:255',
             'hearts_lost' => 'required|integer|min:0|max:3',
@@ -311,7 +321,7 @@ class GameController extends Controller
                 $liptoEarned = $this->grantLiptoWithDailyCap($user, $mysteryBox['lipto'], "Round {$round} mystery box ({$mysteryBox['tier']})");
                 $mysteryBox['lipto'] = $liptoEarned; // reflect what was actually granted (may be capped)
 
-                if ($round < 4) {
+                if ($round < 5) {
                     $nextRound = $this->getOrCreateRoundProgressLocked(
                         $user->id, $request->lesson_id, $round + 1, 'locked'
                     );

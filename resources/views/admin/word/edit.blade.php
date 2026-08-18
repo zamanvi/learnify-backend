@@ -22,7 +22,7 @@
                             For <strong>Verb</strong>: Word = V1, Synonyms = V2, Antonyms = V3<br>
                             For <strong>Vocabulary</strong>: Word, Meaning, Synonyms, Antonyms
                         </p>
-                        <form method="POST" action="{{ route('words.update', $word->id) }}">
+                        <form method="POST" action="{{ route('words.update', $word->id) }}" enctype="multipart/form-data">
                             @csrf
                             @method('PUT')
                             <div class="form-group">
@@ -44,6 +44,14 @@
                                 <label for="antonyms">Antonyms / V3</label>
                                 <input type="text" name="antonyms" class="form-control" id="antonyms"
                                     value="{{ $word->antonyms }}">
+                            </div>
+                            <div class="form-group">
+                                <label for="image">Picture (for the Picture quiz round)</label>
+                                @if($word->image)
+                                    <div class="mb-2"><img src="{{ $word->image_url }}" alt="" style="max-height:80px;border-radius:6px;"></div>
+                                @endif
+                                <input type="file" name="image" class="form-control" id="image" accept="image/*">
+                                <small class="text-muted">Optional. Leave empty to keep the current picture.</small>
                             </div>
                             <input type="submit" class="btn btn-primary" value="Update" />
                             <input type="reset" class="btn iq-bg-danger" value="Cancel" />
