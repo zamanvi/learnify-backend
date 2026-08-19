@@ -27,7 +27,18 @@ class LessonRepository  implements LessonRepositoryInterface
 
     public function findById($id)
     {
-        return $this->lesson->findOrFail($id);
+        $lesson = $this->lesson->findOrFail($id);
+
+        // Attach hints from configuration table (backward compatible)
+        // If hints don't exist, this field is simply null (old apps ignore it)
+        $config = \App\Models\LessonTypeHintConfig::getByType($lesson->type);
+        if ($config) {
+            $lesson->hints = $config->getHintsArray();
+        } else {
+            $lesson->hints = null; // Graceful fallback
+        }
+
+        return $lesson;
     }
 
     public function store(array $data)
