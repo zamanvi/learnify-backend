@@ -27,18 +27,23 @@ return new class extends Migration
      */
     public function up(): void
     {
-        $chapter = DB::table('chapters')->firstOrCreate(
-            ['title' => 'JSC english first paper words meaning'],
-            [
-                'type'       => 'vocabulary',
-                'image_path' => null,
-                'status'     => true,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]
-        );
+        // Check if chapter already exists, otherwise create it
+        $chapter = DB::table('chapters')
+            ->where('title', 'JSC english first paper words meaning')
+            ->first();
 
-        $chapterId = $chapter->id;
+        if (!$chapter) {
+            $chapterId = DB::table('chapters')->insertGetId([
+                'title'       => 'JSC english first paper words meaning',
+                'type'        => 'vocabulary',
+                'image_path'  => null,
+                'status'      => true,
+                'created_at'  => now(),
+                'updated_at'  => now(),
+            ]);
+        } else {
+            $chapterId = $chapter->id;
+        }
         $now = now();
 
         $units = [

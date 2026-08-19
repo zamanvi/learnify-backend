@@ -33,18 +33,22 @@ return new class extends Migration
     public function up(): void
     {
         // Check if chapter already exists, otherwise create it
-        $chapter = DB::table('chapters')->firstOrCreate(
-            ['title' => 'SSC english first paper words meaning'],
-            [
+        $chapter = DB::table('chapters')
+            ->where('title', 'SSC english first paper words meaning')
+            ->first();
+
+        if (!$chapter) {
+            $chapterId = DB::table('chapters')->insertGetId([
+                'title'       => 'SSC english first paper words meaning',
                 'type'        => 'vocabulary',
                 'image_path'  => null,
                 'status'      => true,
                 'created_at'  => now(),
                 'updated_at'  => now(),
-            ]
-        );
-
-        $chapterId = $chapter->id;
+            ]);
+        } else {
+            $chapterId = $chapter->id;
+        }
         $now = now();
 
         $units = [
