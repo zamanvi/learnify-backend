@@ -32,8 +32,6 @@
                                     <option value="">-- Select a Chapter Type --</option>
                                     <option value="vocabulary">Vocabulary (Word / Meaning / Synonyms / Antonyms)</option>
                                     <option value="verb">Verb (V1 / V2 / V3 / Meaning)</option>
-                                    <option value="grammar">Grammar</option>
-                                    <option value="both">Both</option>
                                 </select>
                             </div>
                             <div class="form-group">

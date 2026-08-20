@@ -32,8 +32,6 @@
                                     <option value="">-- Select a Type --</option>
                                     <option value="vocabulary">Vocabulary</option>
                                     <option value="verb">Verb</option>
-                                    <option value="grammar">Grammar</option>
-                                    <option value="both">Both</option>
                                 </select>
                             </div>
                             <input type="submit" class="btn btn-primary" value="Submit" />

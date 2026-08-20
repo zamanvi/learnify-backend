@@ -31,8 +31,6 @@
                                 <select name="type" id="type" required class="form-control">
                                     <option @selected($chapter->type == 'vocabulary') value="vocabulary">Vocabulary (Word / Meaning / Synonyms / Antonyms)</option>
                                     <option @selected($chapter->type == 'verb') value="verb">Verb (V1 / V2 / V3 / Meaning)</option>
-                                    <option @selected($chapter->type == 'grammar') value="grammar">Grammar</option>
-                                    <option @selected($chapter->type == 'both') value="both">Both</option>
                                 </select>
                             </div>
                             <div class="form-group">

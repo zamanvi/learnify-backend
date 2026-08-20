@@ -32,8 +32,6 @@
                                 <select name="type" id="type" required class="form-control">
                                     <option @selected($lesson->type == 'vocabulary') value="vocabulary">Vocabulary</option>
                                     <option @selected($lesson->type == 'verb') value="verb">Verb</option>
-                                    <option @selected($lesson->type == 'grammar') value="grammar">Grammar</option>
-                                    <option @selected($lesson->type == 'both') value="both">Both</option>
                                 </select>
                             </div>
                             <div class="form-group form-check">
