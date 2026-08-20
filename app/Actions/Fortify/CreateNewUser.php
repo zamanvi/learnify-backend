@@ -23,6 +23,7 @@ class CreateNewUser implements CreatesNewUsers
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
             'password' => $this->passwordRules(),
             'terms' => Jetstream::hasTermsAndPrivacyPolicyFeature() ? ['accepted', 'required'] : '',
+            'friend_code' => ['nullable', 'string', 'max:10'], // Optional referral friend code
         ])->validate();
         $redrose_id = str_replace(' ', '', Str::lower($input['name']) . rand(100, 99999));
         $user = User::create([
@@ -36,6 +37,8 @@ class CreateNewUser implements CreatesNewUsers
             'date' => now()->toDateString(),
             'once' => 'no',
             'points' => '10',
+            'lipto_balance' => 0,
+            'friend_code' => User::generateFriendCode(), // Generate unique friend code for new user
         ]);
         if ($user) {
             Friend::create([
@@ -51,6 +54,25 @@ class CreateNewUser implements CreatesNewUsers
                 'type' => 'user',
                 'status' => '1',
             ]);
+
+            // Handle referral bonus: Award 50 LIPTO to referrer if friend_code provided
+            if (!empty($input['friend_code'])) {
+                $referrer = User::where('friend_code', $input['friend_code'])->first();
+                if ($referrer && $referrer->id !== $user->id) {
+                    // Award 50 LIPTO to referrer
+                    $referrer->increment('lipto_balance', 50);
+
+                    // Record referral transaction
+                    \App\Models\LiptoTransaction::create([
+                        'user_id' => $referrer->id,
+                        'amount' => 50,
+                        'type' => 'referral',
+                        'description' => 'Referral bonus: ' . $user->name . ' joined via your friend code',
+                        'status' => 'credited',
+                    ]);
+                }
+            }
+
             return $user;
         } else {
             return back()->with('error', 'Already have an account, please try again with diffrent email address.!');
