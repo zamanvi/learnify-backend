@@ -44,10 +44,9 @@
                             </div>
                              <div class="form-group">
                                 <label for="type">Word Type</label>
-                                <select @disabled(true) name="type" id="type" required class="form-control">
+                                <select name="type" id="type" required class="form-control">
                                     <option @selected($word->type === 'vocabulary') value="vocabulary">Vocabulary</option>
-                                    <option @selected($word->type === 'grammar') value="grammar">Grammar</option>
-                                    <option @selected($word->type === 'both') value="both">Both</option>
+                                    <option @selected($word->type === 'verb') value="verb">Verb</option>
                                 </select>
                             </div>
                         </form>

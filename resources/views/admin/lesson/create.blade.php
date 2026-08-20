@@ -26,14 +26,6 @@
                                 <input required type="text" name="title" class="form-control" id="title"
                                     placeholder="lesson title">
                             </div>
-                            <div class="form-group">
-                                <label for="type">Select Lesson Type</label>
-                                <select name="type" id="type" required class="form-control">
-                                    <option value="">-- Select a Type --</option>
-                                    <option value="vocabulary">Vocabulary</option>
-                                    <option value="verb">Verb</option>
-                                </select>
-                            </div>
                             <input type="submit" class="btn btn-primary" value="Submit" />
                             <input type="reset" class="btn iq-bg-danger" value="Cancel" />
                         </form>

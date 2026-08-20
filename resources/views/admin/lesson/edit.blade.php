@@ -27,13 +27,6 @@
                                 <input required type="text" name="title" class="form-control" id="title"
                                     value="{{ $lesson->title }}">
                             </div>
-                            <div class="form-group">
-                                <label for="type">Select Lesson Type</label>
-                                <select name="type" id="type" required class="form-control">
-                                    <option @selected($lesson->type == 'vocabulary') value="vocabulary">Vocabulary</option>
-                                    <option @selected($lesson->type == 'verb') value="verb">Verb</option>
-                                </select>
-                            </div>
                             <div class="form-group form-check">
                                 <input type="checkbox" name="is_premium" id="is_premium" class="form-check-input" value="1" @checked($lesson->is_premium)>
                                 <label for="is_premium" class="form-check-label">Premium (unlock costs 50 Lipto)</label>

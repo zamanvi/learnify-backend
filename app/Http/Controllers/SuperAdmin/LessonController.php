@@ -58,6 +58,8 @@ class LessonController extends Controller
     {
         $data = $request->except('_token');
         $chapter = Chapter::find($data['chapter_id']);
+        // Lesson inherits its type from its parent Chapter
+        // (UI no longer allows independent type selection)
         $data['type'] = $chapter->type;
         if (\Illuminate\Support\Facades\Schema::hasColumn('lessons', 'is_premium')) {
             $data['is_premium'] = $request->has('is_premium');
@@ -102,6 +104,8 @@ class LessonController extends Controller
     {
         $data = $request->except('_token');
         $chapter = Chapter::find($data['chapter_id']);
+        // Lesson type cannot be edited; it always matches its parent Chapter type
+        // (UI deliberately removed the type dropdown to prevent confusion)
         $data['type'] = $chapter->type;
         if (\Illuminate\Support\Facades\Schema::hasColumn('lessons', 'is_premium')) {
             $data['is_premium'] = $request->has('is_premium');

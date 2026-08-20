@@ -28,8 +28,7 @@
                                 <label for="type">Chapter Type</label>
                                 <select disabled @readonly(true) name="type" id="type" required class="form-control">
                                     <option @selected($chapter->type == 'vocabulary') value="vocabulary">Vocabulary</option>
-                                    <option @selected($chapter->type == 'grammar') value="grammar">Grammar</option>
-                                    <option @selected($chapter->type == 'both') value="both">Both</
+                                    <option @selected($chapter->type == 'verb') value="verb">Verb (V1/V2/V3)</option>
                                 </select>
                             </div>
                             <div class="form-group">
