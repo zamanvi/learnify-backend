@@ -144,6 +144,34 @@ class AuthController extends Controller
                 'type' => 'user',
                 'status' => '1',
             ]);
+
+            // Referral bonus: if this signup carries a friend_code, credit
+            // the referrer 50 LIPTO. Defensive checks mirror the friend_code
+            // column check above - never let a referral hiccup fail the signup.
+            $referralCode = trim((string) $request->input('friend_code', ''));
+            if ($referralCode !== '' && \Illuminate\Support\Facades\Schema::hasColumn('users', 'friend_code')) {
+                $referrer = User::where('friend_code', $referralCode)->first();
+                if ($referrer && $referrer->id !== $user->id) {
+                    \Illuminate\Support\Facades\DB::transaction(function () use ($referrer, $user) {
+                        $lockedReferrer = User::whereKey($referrer->id)->lockForUpdate()->first();
+                        $lockedReferrer->increment('lipto_balance', 50);
+
+                        \Illuminate\Support\Facades\DB::table('users')->where('id', $lockedReferrer->id)
+                            ->update(['lipto_max_balance' => \Illuminate\Support\Facades\DB::raw('GREATEST(lipto_max_balance, ' . (int) $lockedReferrer->lipto_balance . ')')]);
+
+                        \App\Models\LiptoTransaction::create([
+                            'user_id'         => $lockedReferrer->id,
+                            'amount'          => 50,
+                            'type'            => 'referral_bonus',
+                            'source'          => 'referral',
+                            'description'     => 'Referral bonus: ' . $user->name . ' যোগ দিয়েছে তোমার কোড দিয়ে',
+                            'balance_after'   => $lockedReferrer->lipto_balance,
+                            'related_user_id' => $user->id,
+                        ]);
+                    });
+                }
+            }
+
             return $this->apiResponse(
                 [
                     'user' => $user,
