@@ -31,9 +31,7 @@
                                 <select name="type" id="type" required class="form-control">
                                     <option value="">-- Select a Chapter Type --</option>
                                     <option value="vocabulary">Vocabulary</option>
-                                    <option value="grammar">Grammar</option>
                                     <option value="verb">Verb (V1/V2/V3)</option>
-                                    <option value="both">Both</option>
                                 </select>
                             </div>
                             <div class="form-group">
