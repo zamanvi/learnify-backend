@@ -53,6 +53,7 @@ class WordController extends Controller
                     'is_premium' => true,
                     'unlocked' => false,
                     'locked_remaining' => max(0, $total - $teaser->count()),
+                    'lesson_pattern' => $lesson->pattern ?? null,
                 ], true, 'Premium lesson locked', Response::HTTP_OK);
             }
         }
@@ -63,6 +64,7 @@ class WordController extends Controller
                 'words' => $words,
                 'is_premium' => (bool) ($lesson->is_premium ?? false),
                 'unlocked' => true,
+                'lesson_pattern' => $lesson->pattern ?? null,
             ], true, 'All words', Response::HTTP_OK);
         }else{
             return view('admin.word.index', compact('words', 'lesson'));

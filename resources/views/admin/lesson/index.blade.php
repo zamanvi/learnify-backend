@@ -27,6 +27,16 @@
                                 <input required type="text" name="title" class="form-control" id="title"
                                     placeholder="lesson title">
                             </div>
+                            <div class="form-group">
+                                <label for="pattern">Lesson Content Pattern</label>
+                                <select name="pattern" id="pattern" class="form-control">
+                                    <option value="">-- Select Pattern (Optional) --</option>
+                                    <option value="standard">Standard (Meaning + Example)</option>
+                                    <option value="exam">Exam (Meaning + Exam Type %)</option>
+                                    <option value="medical">Medical (Meaning + Source + %)</option>
+                                </select>
+                                <small class="form-text text-muted">All words in this lesson will follow the same pattern.</small>
+                            </div>
                             <div class="form-group form-check">
                                 <input type="checkbox" name="is_premium" id="is_premium" class="form-check-input" value="1">
                                 <label for="is_premium" class="form-check-label">Premium (unlock costs 50 Lipto)</label>

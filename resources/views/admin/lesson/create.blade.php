@@ -26,6 +26,16 @@
                                 <input required type="text" name="title" class="form-control" id="title"
                                     placeholder="lesson title">
                             </div>
+                            <div class="form-group">
+                                <label for="pattern">Lesson Content Pattern</label>
+                                <select name="pattern" id="pattern" class="form-control">
+                                    <option value="">-- Select Pattern (Optional) --</option>
+                                    <option value="standard">Standard (Meaning + Example)</option>
+                                    <option value="exam">Exam (Meaning + Exam Type %)</option>
+                                    <option value="medical">Medical (Meaning + Source + %)</option>
+                                </select>
+                                <small class="form-text text-muted">All words in this lesson will follow the same pattern.</small>
+                            </div>
                             <input type="submit" class="btn btn-primary" value="Submit" />
                             <input type="reset" class="btn iq-bg-danger" value="Cancel" />
                         </form>

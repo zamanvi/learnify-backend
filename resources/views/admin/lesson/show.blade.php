@@ -30,6 +30,11 @@
                                 <input readonly type="text" class="form-control" id="type"
                                     value="{{ $lesson->type }}">
                             </div>
+                            <div class="form-group">
+                                <label for="pattern">Lesson Content Pattern</label>
+                                <input readonly type="text" class="form-control" id="pattern"
+                                    value="{{ $lesson->pattern ?? '(not set)' }}">
+                            </div>
                         </form>
                     </div>
                 </div>
