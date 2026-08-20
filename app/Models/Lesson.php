@@ -15,4 +15,18 @@ class Lesson extends Model
     {
         return $this->belongsTo(Chapter::class);
     }
+
+    /**
+     * Generate hint text dynamically based on lesson pattern.
+     * This ensures the hint matches actual available fields in the pattern.
+     */
+    public function getHintTextAttribute(): string
+    {
+        return match($this->pattern) {
+            'standard' => 'শব্দ | অর্থ',                    // Word | Meaning
+            'exam' => 'অর্থ | পরীক্ষা %',                   // Meaning | Exam %
+            'medical' => 'অর্থ | উৎস / %',                  // Meaning | Source / %
+            default => 'শব্দ | অর্থ'                        // Default fallback
+        };
+    }
 }
