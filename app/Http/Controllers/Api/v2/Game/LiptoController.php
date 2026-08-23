@@ -145,31 +145,45 @@ class LiptoController extends Controller
         $user   = $request->user();
         $amount = (int) $request->amount;
 
-        if ($user->lipto_balance < $amount) {
-            return response()->json([
-                'status'  => 'error',
-                'message' => 'Insufficient Lipto balance',
-                'balance' => (int) $user->lipto_balance,
-            ], 422);
-        }
+        // The balance check used to happen here, on a PHP-side read taken
+        // before any lock - two concurrent spend calls (a double-tap) could
+        // both pass it against the same stale balance and both decrement,
+        // pushing the balance negative. Locked inside the transaction now,
+        // the same way earn()/transfer()/PremiumController::unlockLesson()
+        // already do it correctly.
+        $result = DB::transaction(function () use ($user, $amount, $request) {
+            $locked = User::whereKey($user->id)->lockForUpdate()->first();
 
-        DB::transaction(function () use ($user, $amount, $request) {
-            $user->decrement('lipto_balance', $amount);
+            if ($locked->lipto_balance < $amount) {
+                return ['ok' => false, 'balance' => (int) $locked->lipto_balance];
+            }
+
+            $locked->decrement('lipto_balance', $amount);
 
             LiptoTransaction::create([
-                'user_id'       => $user->id,
+                'user_id'       => $locked->id,
                 'amount'        => -$amount,
                 'type'          => 'spend',
                 'source'        => $request->source,
                 'description'   => $request->description,
-                'balance_after' => $user->lipto_balance,
+                'balance_after' => $locked->lipto_balance,
             ]);
+
+            return ['ok' => true, 'balance' => (int) $locked->lipto_balance];
         });
+
+        if (!$result['ok']) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Insufficient Lipto balance',
+                'balance' => $result['balance'],
+            ], 422);
+        }
 
         return response()->json([
             'status'  => 'success',
             'spent'   => $amount,
-            'balance' => (int) $user->lipto_balance,
+            'balance' => $result['balance'],
         ]);
     }
 
