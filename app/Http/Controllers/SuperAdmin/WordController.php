@@ -37,6 +37,17 @@ class WordController extends Controller
         $clientType = get_client_type() ?? 'web';
         $lesson = Lesson::find($id);
 
+        // Lesson may no longer exist (deleted between the app caching this
+        // lesson id and the user opening it, or a stale/bad id) - every read
+        // below assumes a real Lesson, so this has to be checked before any
+        // of them run instead of surfacing as an uncaught error.
+        if (!$lesson) {
+            if ($clientType === 'app') {
+                return ApiResponse::respond(null, false, 'Lesson not found', Response::HTTP_NOT_FOUND);
+            }
+            abort(404, 'Lesson not found');
+        }
+
         // Premium lessons: don't send the locked part of the word list until
         // this specific user has unlocked it. Checked here (not just client-side)
         // because this endpoint has no required auth - anyone could otherwise
