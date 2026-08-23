@@ -25,4 +25,13 @@ RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cac
 
 EXPOSE 8080
 
+# php -S is single-threaded by default, so it was serializing the live app's
+# constant API traffic behind whatever the admin dashboard was doing (and vice
+# versa) - slow/queued responses were the real cause of admin users
+# double-clicking Save/Delete, which then hit already-processed records and
+# surfaced as intermittent 404s. PHP_CLI_SERVER_WORKERS (native since PHP 7.4,
+# Linux only - fine here) forks worker processes instead of handling one
+# request at a time, with no change to the command or serving stack itself.
+ENV PHP_CLI_SERVER_WORKERS=4
+
 CMD php artisan migrate --force && php -S 0.0.0.0:${PORT:-8080} -t public
