@@ -21,26 +21,35 @@
                         <form method="POST" action="{{ route('words.store') }}">
                             @csrf
                             <input type="hidden" name="lesson_id" value="{{ $lesson->id }}">
+                            @php $cols = $lesson->column_labels; @endphp
+                            @if($cols['word']['show'])
                             <div class="form-group">
-                                <label for="word">{{ $lesson->type === 'verb' ? 'Verb 1' : 'Word' }}</label>
+                                <label for="word">{{ $cols['word']['label'] }}</label>
                                 <input required type="text" name="word" class="form-control" id="word"
-                                    placeholder="{{ $lesson->type === 'verb' ? 'Verb 1' : 'Word' }}">
+                                    placeholder="{{ $cols['word']['placeholder'] }}">
                             </div>
+                            @endif
+                            @if($cols['meaning']['show'])
                             <div class="form-group">
-                                <label for="meaning">{{ $lesson->type === 'verb' ? 'Verb ' : 'Word ' }} meaning</label>
+                                <label for="meaning">{{ $cols['meaning']['label'] }}</label>
                                 <input type="text" name="meaning" class="form-control" id="meaning"
-                                    placeholder="{{ $lesson->type === 'verb' ? 'Verb ' : 'Word ' }} meaning">
+                                    placeholder="{{ $cols['meaning']['placeholder'] }}">
                             </div>
+                            @endif
+                            @if($cols['synonyms']['show'])
                             <div class="form-group">
-                                <label for="synonyms">{{ $lesson->type === 'verb' ? 'Verb 2' : 'Word synonyms' }}</label>
+                                <label for="synonyms">{{ $cols['synonyms']['label'] }}</label>
                                 <input type="text" name="synonyms" class="form-control" id="synonyms"
-                                    placeholder="{{ $lesson->type === 'verb' ? 'Verb 2' : 'Word synonyms' }} ">
+                                    placeholder="{{ $cols['synonyms']['placeholder'] }}">
                             </div>
+                            @endif
+                            @if($cols['antonyms']['show'])
                             <div class="form-group">
-                                <label for="antonyms">{{ $lesson->type === 'verb' ? 'Verb 3' : 'Word antonyms' }}</label>
+                                <label for="antonyms">{{ $cols['antonyms']['label'] }}</label>
                                 <input type="text" name="antonyms" class="form-control" id="antonyms"
-                                    placeholder="{{ $lesson->type === 'verb' ? 'Verb 3' : 'Word antonyms' }}">
+                                    placeholder="{{ $cols['antonyms']['placeholder'] }}">
                             </div>
+                            @endif
                            <div class="form-group">
                                 <label for="type">Word Type</label>
                                 <select name="type" id="type" required class="form-control">

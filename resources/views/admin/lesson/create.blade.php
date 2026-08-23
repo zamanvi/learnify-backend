@@ -27,14 +27,16 @@
                                     placeholder="lesson title">
                             </div>
                             <div class="form-group">
-                                <label for="pattern">Lesson Content Pattern</label>
-                                <select name="pattern" id="pattern" class="form-control">
-                                    <option value="">-- Select Pattern (Optional) --</option>
-                                    <option value="standard">Standard (Meaning + Example)</option>
-                                    <option value="exam">Exam (Meaning + Exam Type %)</option>
-                                    <option value="medical">Medical (Meaning + Source + %)</option>
-                                </select>
-                                <small class="form-text text-muted">All words in this lesson will follow the same pattern.</small>
+                                <label>Word List Column Names <span class="text-muted">(optional)</span></label>
+                                <small class="form-text text-muted d-block mb-2">
+                                    Type a name for each column you want in this lesson's word list. Leave any of
+                                    them blank to leave that column out entirely - both here and in the app.
+                                    Leave all 4 blank to keep the default Word/Meaning/Synonyms/Antonyms columns.
+                                </small>
+                                <input type="text" name="col1_label" class="form-control mb-2" placeholder="Column 1 name (e.g. Word)">
+                                <input type="text" name="col2_label" class="form-control mb-2" placeholder="Column 2 name (e.g. Meaning)">
+                                <input type="text" name="col3_label" class="form-control mb-2" placeholder="Column 3 name (e.g. Synonyms)">
+                                <input type="text" name="col4_label" class="form-control" placeholder="Column 4 name (e.g. Antonyms)">
                             </div>
                             <input type="submit" class="btn btn-primary" value="Submit" />
                             <input type="reset" class="btn iq-bg-danger" value="Cancel" />

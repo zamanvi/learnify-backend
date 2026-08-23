@@ -31,9 +31,9 @@
                                     value="{{ $lesson->type }}">
                             </div>
                             <div class="form-group">
-                                <label for="pattern">Lesson Content Pattern</label>
+                                <label for="pattern">Word List Column Names</label>
                                 <input readonly type="text" class="form-control" id="pattern"
-                                    value="{{ $lesson->pattern ?? '(not set)' }}">
+                                    value="{{ collect([$lesson->col1_label, $lesson->col2_label, $lesson->col3_label, $lesson->col4_label])->filter()->implode(' | ') ?: '(default Word/Meaning/Synonyms/Antonyms)' }}">
                             </div>
                         </form>
                     </div>
