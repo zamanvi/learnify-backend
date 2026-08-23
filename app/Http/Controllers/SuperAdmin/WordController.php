@@ -9,6 +9,7 @@ use App\Models\Word;
 use Illuminate\Http\Request;
 use App\Helpers\ApiResponse;
 use App\Repositories\WordRepositoryInterface;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Response;
 use Laravel\Sanctum\PersonalAccessToken;
 
@@ -158,7 +159,16 @@ class WordController extends Controller
             $data['image'] = upload_file($request->file('image'));
         }
 
-        $this->wordRepository->update($id, $data);
+        // A slow response (see Dockerfile note on PHP_CLI_SERVER_WORKERS) can
+        // make an admin submit twice; the second submit's findOrFail() would
+        // otherwise surface as a raw 404 if the first one already changed
+        // something this update depends on (e.g. the word was deleted
+        // between the two clicks). Same reasoning in destroy() below.
+        try {
+            $this->wordRepository->update($id, $data);
+        } catch (ModelNotFoundException $e) {
+            return back()->with(['error', 'This word no longer exists - it may have already been updated or deleted.']);
+        }
         return back();
     }
 
@@ -167,8 +177,15 @@ class WordController extends Controller
      */
     public function destroy(string $id)
     {
-        $fword = $this->wordRepository->findById($id);
-        $word = $this->wordRepository->delete($id);
+        try {
+            $fword = $this->wordRepository->findById($id);
+            $word = $this->wordRepository->delete($id);
+        } catch (ModelNotFoundException $e) {
+            // Someone/something already deleted it (e.g. a duplicate submit) -
+            // that's not really a failure from the admin's point of view.
+            return back()->with(['success', 'Word already deleted.']);
+        }
+
         if ($word) {
             return redirect()->route('chapters.lessons.words.create', $fword->lesson_id)->with(['success', 'Word delete Succesfull.!']);
         }else {
