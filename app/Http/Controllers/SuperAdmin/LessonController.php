@@ -7,6 +7,7 @@ use App\Models\Chapter;
 use Illuminate\Http\Request;
 use App\Repositories\LessonRepositoryInterface;
 use App\Helpers\ApiResponse;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Response;
 
 class LessonController extends Controller
@@ -58,6 +59,9 @@ class LessonController extends Controller
     {
         $data = $request->except('_token');
         $chapter = Chapter::find($data['chapter_id']);
+        if (!$chapter) {
+            return back()->with(['error', 'That chapter no longer exists.']);
+        }
         // Lesson inherits its type from its parent Chapter
         // (UI no longer allows independent type selection)
         $data['type'] = $chapter->type;
@@ -104,13 +108,24 @@ class LessonController extends Controller
     {
         $data = $request->except('_token');
         $chapter = Chapter::find($data['chapter_id']);
+        if (!$chapter) {
+            return back()->with(['error', 'That chapter no longer exists.']);
+        }
         // Lesson type cannot be edited; it always matches its parent Chapter type
         // (UI deliberately removed the type dropdown to prevent confusion)
         $data['type'] = $chapter->type;
         if (\Illuminate\Support\Facades\Schema::hasColumn('lessons', 'is_premium')) {
             $data['is_premium'] = $request->has('is_premium');
         }
-        $this->lessonRepository->update($id, $data);
+        // A slow response (see Dockerfile note on PHP_CLI_SERVER_WORKERS) can
+        // make an admin submit twice; the second submit's findOrFail() would
+        // otherwise surface as a raw 404 if the lesson was deleted between
+        // the two clicks. Same reasoning in destroy() below.
+        try {
+            $this->lessonRepository->update($id, $data);
+        } catch (ModelNotFoundException $e) {
+            return back()->with(['error', 'This lesson no longer exists - it may have already been updated or deleted.']);
+        }
         return back();
     }
 
@@ -134,7 +149,12 @@ class LessonController extends Controller
      */
     public function destroy(string $id)
     {
-        $lesson = $this->lessonRepository->delete($id);
+        try {
+            $lesson = $this->lessonRepository->delete($id);
+        } catch (ModelNotFoundException $e) {
+            return back()->with(['success', 'Lesson already deleted.']);
+        }
+
         if ($lesson) {
             return back()->with(['success', 'Lesson delete Succesfull.!']);
         }else {
