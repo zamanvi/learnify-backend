@@ -76,7 +76,26 @@
     <script src="{{ asset('js/ckeditor/adapters/jquery.js') }}"></script>
     <script src="{{ asset('js/ckeditor/styles.js') }}"></script>
     <script src="{{ asset('js/ckeditor/ckeditor.custom.js') }}"></script>
-    
+
+    <script>
+        // Prevent double-submit (Save/Delete double-clicks) across the whole
+        // admin panel: disable a form's submit button(s) right after it
+        // submits. This is what caused intermittent "already deleted" 404s -
+        // a slow response made admins click again, and the retry hit a
+        // record the first click had already removed/changed.
+        document.addEventListener('submit', function (e) {
+            var form = e.target;
+            if (!(form instanceof HTMLFormElement)) return;
+            var buttons = form.querySelectorAll('button[type="submit"], input[type="submit"]');
+            buttons.forEach(function (btn) {
+                btn.disabled = true;
+                // Safety net: re-enable if we're still on this page after
+                // 10s (failed/slow request) so the admin isn't stuck.
+                setTimeout(function () { btn.disabled = false; }, 10000);
+            });
+        }, true);
+    </script>
+
     <!-- Custom Script -->
     @yield('script')
 
