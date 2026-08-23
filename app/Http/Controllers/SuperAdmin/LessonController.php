@@ -125,9 +125,6 @@ class LessonController extends Controller
             $this->lessonRepository->update($id, $data);
         } catch (ModelNotFoundException $e) {
             return back()->with(['error', 'This lesson no longer exists - it may have already been updated or deleted.']);
-        } catch (\Throwable $e) {
-            // TEMP DIAGNOSTIC - remove once the live 500 on lesson update is found.
-            return response($e->getMessage() . ' @ ' . $e->getFile() . ':' . $e->getLine(), 500);
         }
         return back();
     }
