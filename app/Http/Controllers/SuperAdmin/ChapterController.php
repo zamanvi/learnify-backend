@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Helpers\ApiResponse;
 use App\Models\Lesson;
 use App\Repositories\ChapterRepositoryInterface;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Response;
 
 class ChapterController extends Controller
@@ -90,7 +91,15 @@ class ChapterController extends Controller
     public function update(Request $request, string $id)
     {
         $data = $request->except('_token');
-        $this->chapterRepository->update($id, $data);
+        // A slow response (see Dockerfile note on PHP_CLI_SERVER_WORKERS) can
+        // make an admin submit twice; the second submit's findOrFail() would
+        // otherwise surface as a raw 404 if the chapter was deleted between
+        // the two clicks. Same reasoning in destroy() below.
+        try {
+            $this->chapterRepository->update($id, $data);
+        } catch (ModelNotFoundException $e) {
+            return back()->with(['error', 'This chapter no longer exists - it may have already been updated or deleted.']);
+        }
         return redirect(route('chapters.show', $id));
     }
 
@@ -99,7 +108,12 @@ class ChapterController extends Controller
      */
     public function destroy(string $id)
     {
-        $chapters = $this->chapterRepository->delete($id);
+        try {
+            $chapters = $this->chapterRepository->delete($id);
+        } catch (ModelNotFoundException $e) {
+            return back()->with(['success', 'Chapter already deleted.']);
+        }
+
         if ($chapters) {
             return back()->with(['success', 'chapter delete Succesfull.!']);
         }else {
