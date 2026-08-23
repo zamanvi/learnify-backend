@@ -48,11 +48,17 @@ class LessonRepository  implements LessonRepositoryInterface
 
     public function update($id, array $data)
     {
-        return $this->findById($id)->update($data);
+        // Deliberately NOT findById() here - that attaches a virtual
+        // ->hints property (for API responses) directly onto the model's
+        // attribute bag. update()/save() persists every dirty attribute,
+        // 'hints' included, and there's no such column - every lesson
+        // update was throwing "Unknown column 'hints'" until this was
+        // split out. findOrFail() gets a clean model with no side effects.
+        return $this->lesson->findOrFail($id)->update($data);
     }
 
     public function delete(int $id): bool
     {
-        return $this->findById($id)->delete();
+        return $this->lesson->findOrFail($id)->delete();
     }
 }
