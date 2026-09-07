@@ -3,15 +3,14 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class Lesson extends Model
+class Section extends Model
 {
     protected $fillable = [
-        'chapter_id',
-        'title',
+        'name',
         'slug',
-        'content',
+        'description',
         'order',
         'is_active',
     ];
@@ -22,10 +21,10 @@ class Lesson extends Model
     ];
 
     /**
-     * Get the chapter this lesson belongs to
+     * Get chapters in this section
      */
-    public function chapter(): BelongsTo
+    public function chapters(): HasMany
     {
-        return $this->belongsTo(Chapter::class);
+        return $this->hasMany(Chapter::class);
     }
 }

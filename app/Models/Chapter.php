@@ -2,17 +2,38 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Chapter extends Model
 {
-    use HasFactory;
-    protected $fillable = ['title', 'type', 'image_path', 'status'];
+    protected $fillable = [
+        'section_id',
+        'title',
+        'slug',
+        'description',
+        'order',
+        'is_active',
+    ];
 
-    protected $casts = ['status' => 'bool'];
+    protected $casts = [
+        'is_active' => 'boolean',
+        'order' => 'integer',
+    ];
 
-    public function lessons()
+    /**
+     * Get the section this chapter belongs to
+     */
+    public function section(): BelongsTo
+    {
+        return $this->belongsTo(Section::class);
+    }
+
+    /**
+     * Get lessons in this chapter
+     */
+    public function lessons(): HasMany
     {
         return $this->hasMany(Lesson::class);
     }
