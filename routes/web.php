@@ -134,6 +134,7 @@ Route::middleware(['auth:sanctum',config('jetstream.auth_session'),'verified'])-
 
         Route::get('{sectionSlug}/chapters', [WebSectionController::class, 'chapters'])->name('websections.chapters');
         Route::post('chapters/store', [WebSectionController::class, 'chapterStore'])->name('websections.chapter.store');
+        Route::post('chapters/copy-from-book', [WebSectionController::class, 'copyFromBook'])->name('websections.chapter.copy-from-book');
         Route::get('chapters/edit/{slug}', [WebSectionController::class, 'chapterEdit'])->name('websections.chapter.edit');
         Route::put('chapters/update/{id}', [WebSectionController::class, 'chapterUpdate'])->name('websections.chapter.update');
         Route::delete('chapters/delete/{id}', [WebSectionController::class, 'chapterDelete'])->name('websections.chapter.delete');

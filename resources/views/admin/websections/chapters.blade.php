@@ -90,6 +90,31 @@
                         </form>
                     </div>
                 </div>
+
+                <div class="card">
+                    <div class="card-body">
+                        <h3 class="card-title">Copy from Book Chapter</h3>
+                        <p class="text-muted">Reuse an existing app chapter's content (e.g. Grammar) here instead of
+                            retyping it. This only <strong>reads</strong> the Book chapter - nothing there is changed,
+                            and the app is completely unaffected. Review the copy afterwards before publishing.</p>
+                        <form method="POST" action="{{ route('websections.chapter.copy-from-book') }}">
+                            @csrf
+                            <input type="hidden" name="section_id" value="{{ $section->id }}">
+                            <div class="form-group">
+                                <label for="book_chapter_id">Book Chapter</label>
+                                <select required name="book_chapter_id" id="book_chapter_id" class="form-control">
+                                    <option value="">— Select a chapter to copy —</option>
+                                    @foreach ($bookChapters as $bc)
+                                        <option value="{{ $bc->id }}">
+                                            {{ optional($bc->book)->title }} — {{ $bc->title }} ({{ $bc->type }})
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <input type="submit" class="btn btn-outline-primary" value="Copy into this Section">
+                        </form>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
