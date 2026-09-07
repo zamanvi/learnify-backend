@@ -11,6 +11,7 @@ use App\Http\Controllers\SuperAdmin\SAdminController;
 use App\Http\Controllers\SuperAdmin\WordController;
 use App\Http\Controllers\SuperAdmin\NotificationLogController;
 use App\Http\Controllers\SuperAdmin\WizardController;
+use App\Http\Controllers\SuperAdmin\WebSectionController;
 
 /*
 |--------------------------------------------------------------------------
@@ -124,6 +125,24 @@ Route::middleware(['auth:sanctum',config('jetstream.auth_session'),'verified'])-
         Route::get('story/edit/{id}', [WizardController::class, 'story_edit'])->name('wizard.story.edit');
         Route::put('story/update/{id}', [WizardController::class, 'story_update'])->name('wizard.story.update');
         Route::get('story/delete/{id}', [WizardController::class, 'story_delete'])->name('wizard.story.delete');
+    });
+
+    // Website ("Book 2" / masterenglishbook.com) Section -> Chapter -> Lesson
+    // - separate from Book/Vocabulary/Wizard above, see WebSectionController.
+    Route::prefix('web-sections')->group(function () {
+        Route::get('/', [WebSectionController::class, 'index'])->name('websections.index');
+
+        Route::get('{sectionSlug}/chapters', [WebSectionController::class, 'chapters'])->name('websections.chapters');
+        Route::post('chapters/store', [WebSectionController::class, 'chapterStore'])->name('websections.chapter.store');
+        Route::get('chapters/edit/{slug}', [WebSectionController::class, 'chapterEdit'])->name('websections.chapter.edit');
+        Route::put('chapters/update/{id}', [WebSectionController::class, 'chapterUpdate'])->name('websections.chapter.update');
+        Route::delete('chapters/delete/{id}', [WebSectionController::class, 'chapterDelete'])->name('websections.chapter.delete');
+
+        Route::get('chapters/{chapterSlug}/lessons', [WebSectionController::class, 'lessons'])->name('websections.lessons');
+        Route::post('lessons/store', [WebSectionController::class, 'lessonStore'])->name('websections.lesson.store');
+        Route::get('lessons/edit/{slug}', [WebSectionController::class, 'lessonEdit'])->name('websections.lesson.edit');
+        Route::put('lessons/update/{id}', [WebSectionController::class, 'lessonUpdate'])->name('websections.lesson.update');
+        Route::delete('lessons/delete/{id}', [WebSectionController::class, 'lessonDelete'])->name('websections.lesson.delete');
     });
 
     Route::get('notification-logs', [NotificationLogController::class, 'index'])->name('notification.logs');

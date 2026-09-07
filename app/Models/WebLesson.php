@@ -30,4 +30,42 @@ class WebLesson extends Model
     {
         return $this->belongsTo(WebChapter::class, 'web_chapter_id');
     }
+
+    public static function createStore($request): bool
+    {
+        $slug = $request->slug != null ? make_slug($request->slug) : make_slug($request->title);
+        while (self::where('slug', $slug)->exists()) {
+            $slug = set_increment_slug(self::class, $slug);
+        }
+        $newEntry = self::create([
+            'web_chapter_id' => $request->web_chapter_id,
+            'title' => $request->title,
+            'slug' => $slug,
+            'content' => $request->content,
+            'order' => $request->order ?? 0,
+            'is_active' => $request->has('is_active'),
+        ]);
+        return $newEntry instanceof self;
+    }
+
+    public static function updateStore($request, $id): bool
+    {
+        $lesson = self::find($id);
+        if (!$lesson) {
+            return false;
+        }
+        $slug = $request->slug != null ? make_slug($request->slug) : $lesson->slug;
+        if ($slug != $lesson->slug) {
+            while (self::where('slug', $slug)->where('id', '!=', $id)->exists()) {
+                $slug = set_increment_slug(self::class, $slug);
+            }
+        }
+        return self::where('id', $id)->update([
+            'title' => $request->title,
+            'slug' => $slug,
+            'content' => $request->content,
+            'order' => $request->order ?? 0,
+            'is_active' => $request->has('is_active'),
+        ]);
+    }
 }
