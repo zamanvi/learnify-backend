@@ -1,7 +1,7 @@
 <div class="iq-sidebar">
     <div class="iq-sidebar-logo d-flex justify-content-between">
         <a href="/superadmin">
-            <span>Redrose</span>
+            <span>Learnify</span>
         </a>
         <div class="iq-menu-bt align-self-center">
             <div class="wrapper-menu">

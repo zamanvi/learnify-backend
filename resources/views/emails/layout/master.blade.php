@@ -12,7 +12,7 @@
     <meta name="x-apple-disable-message-reformatting" />
     <link href="https://fonts.googleapis.com/css?family=PT+Sans:400,400i,700,700i&display=swap" rel="stylesheet" />
 
-    <title>RedRoseBD</title>
+    <title>Learnify</title>
     @include('emails.layout.script')
 </head>
 

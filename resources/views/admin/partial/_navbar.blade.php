@@ -4,7 +4,7 @@
             <div class="top-logo">
                 <a href="/superadmin" class="logo">
                     {{-- <img src="images/logo.png" class="img-fluid" alt=""> --}}
-                    <span>RedRose</span>
+                    <span>Learnify</span>
                 </a>
             </div>
         </div>

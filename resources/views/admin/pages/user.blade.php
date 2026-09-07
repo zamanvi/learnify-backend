@@ -27,7 +27,7 @@
                                 <tr>
                                     <th>Picture</th>
                                     <th>Name</th>
-                                    <th>Redrose Id</th>
+                                    <th>User ID</th>
                                     <th>Email</th>
                                     <th>Points</th>
                                     <th>Type</th>

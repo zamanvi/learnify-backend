@@ -1,7 +1,7 @@
 @extends('layouts.admin')
 
 @section('title')
-    RedRose
+    Learnify
 @endsection
 @section('breadcrumb')
     <nav aria-label="breadcrumb">
