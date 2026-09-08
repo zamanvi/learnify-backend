@@ -107,11 +107,33 @@
                                     @foreach ($bookChapters as $bc)
                                         <option value="{{ $bc->id }}">
                                             {{ optional($bc->book)->title }} — {{ $bc->title }} ({{ $bc->type }})
+                                            @if (in_array($bc->id, $alreadyCopiedBookChapterIds)) [already copied] @endif
                                         </option>
                                     @endforeach
                                 </select>
                             </div>
                             <input type="submit" class="btn btn-outline-primary" value="Copy into this Section">
+                        </form>
+
+                        <hr>
+
+                        <h5 class="mt-3">Or copy ALL chapters from a Book</h5>
+                        <p class="text-muted">Skips any chapter already copied into this section (tracked
+                            automatically), so it's safe to re-run after adding new chapters to a Book.</p>
+                        <form method="POST" action="{{ route('websections.chapter.copy-all-from-book') }}"
+                              onsubmit="return confirm('Copy every not-yet-copied chapter from this book into ' + '{{ $section->name }}' + '? This may create several chapters at once.');">
+                            @csrf
+                            <input type="hidden" name="section_id" value="{{ $section->id }}">
+                            <div class="form-group">
+                                <label for="book_id">Book</label>
+                                <select required name="book_id" id="book_id" class="form-control">
+                                    <option value="">— Select a book —</option>
+                                    @foreach ($books as $b)
+                                        <option value="{{ $b->id }}">{{ $b->title }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <input type="submit" class="btn btn-outline-secondary" value="Copy All Remaining Chapters">
                         </form>
                     </div>
                 </div>

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\SuperAdmin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Book;
 use App\Models\BookChapter;
 use App\Models\Section;
 use App\Models\WebChapter;
@@ -31,11 +32,18 @@ class WebSectionController extends Controller
         $section = Section::where('slug', $sectionSlug)->firstOrFail();
         $chapters = WebChapter::where('section_id', $section->id)->orderBy('order')->paginate(10);
 
-        // For the "Copy from Book Chapter" convenience tool - read-only lookup,
-        // does not touch/modify the app's Book data in any way.
+        // For the "Copy from Book Chapter" convenience tools - read-only
+        // lookups, never touch/modify the app's Book data.
         $bookChapters = BookChapter::with('book')->orderBy('book_id')->orderBy('title')->get();
+        $books = Book::orderBy('title')->get();
+        $alreadyCopiedBookChapterIds = WebChapter::where('section_id', $section->id)
+            ->whereNotNull('source_book_chapter_id')
+            ->pluck('source_book_chapter_id')
+            ->all();
 
-        return view('admin.websections.chapters', compact('section', 'chapters', 'bookChapters'));
+        return view('admin.websections.chapters', compact(
+            'section', 'chapters', 'bookChapters', 'books', 'alreadyCopiedBookChapterIds'
+        ));
     }
 
     /**
@@ -58,13 +66,64 @@ class WebSectionController extends Controller
             return back()->with('warning', 'Book chapter not found...!');
         }
 
+        $webChapter = $this->copyOneBookChapter($bookChapter, $request->section_id);
+        $lessonCount = $webChapter->lessons()->count();
+
+        return redirect(route('websections.lessons', $webChapter->slug))
+            ->with('success', "Copied \"{$bookChapter->title}\" with {$lessonCount} lesson(s) - review before publishing.");
+    }
+
+    /**
+     * Same idea as copyFromBook, but for an entire Book at once - copies
+     * every chapter (+ items) that hasn't already been copied into this
+     * Section before, skipping any that have (matched by
+     * source_book_chapter_id, not by title, so a manually-renamed copy
+     * still counts as "already copied"). Still strictly read-only against
+     * Book/BookChapter/BookItem.
+     */
+    public function copyAllFromBook(Request $request)
+    {
+        $request->validate([
+            'section_id' => 'required|exists:sections,id',
+            'book_id' => 'required|exists:books,id',
+        ]);
+
+        $alreadyCopiedIds = WebChapter::where('section_id', $request->section_id)
+            ->whereNotNull('source_book_chapter_id')
+            ->pluck('source_book_chapter_id')
+            ->all();
+
+        $bookChapters = BookChapter::with('items')
+            ->where('book_id', $request->book_id)
+            ->whereNotIn('id', $alreadyCopiedIds)
+            ->get();
+
+        $copiedChapters = 0;
+        $copiedLessons = 0;
+        foreach ($bookChapters as $bookChapter) {
+            $webChapter = $this->copyOneBookChapter($bookChapter, $request->section_id);
+            $copiedChapters++;
+            $copiedLessons += $webChapter->lessons()->count();
+        }
+
+        $section = Section::find($request->section_id);
+        $message = $copiedChapters > 0
+            ? "Copied {$copiedChapters} chapter(s) with {$copiedLessons} lesson(s) total - review before publishing."
+            : 'Nothing to copy - every chapter in this book is already copied into this section.';
+
+        return redirect(route('websections.chapters', $section->slug))->with('success', $message);
+    }
+
+    private function copyOneBookChapter(BookChapter $bookChapter, int $sectionId): WebChapter
+    {
         $slug = make_slug($bookChapter->title);
         while (WebChapter::where('slug', $slug)->exists()) {
             $slug = set_increment_slug(WebChapter::class, $slug);
         }
 
         $webChapter = WebChapter::create([
-            'section_id' => $request->section_id,
+            'section_id' => $sectionId,
+            'source_book_chapter_id' => $bookChapter->id,
             'title' => $bookChapter->title,
             'slug' => $slug,
             'description' => null,
@@ -72,7 +131,6 @@ class WebSectionController extends Controller
             'is_active' => true,
         ]);
 
-        $copiedCount = 0;
         foreach ($bookChapter->items as $item) {
             $lessonSlug = make_slug($item->title);
             while (WebLesson::where('slug', $lessonSlug)->exists()) {
@@ -86,11 +144,9 @@ class WebSectionController extends Controller
                 'order' => 0,
                 'is_active' => true,
             ]);
-            $copiedCount++;
         }
 
-        return redirect(route('websections.lessons', $webChapter->slug))
-            ->with('success', "Copied \"{$bookChapter->title}\" with {$copiedCount} lesson(s) - review before publishing.");
+        return $webChapter;
     }
 
     public function chapterStore(Request $request)

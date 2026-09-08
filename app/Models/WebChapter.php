@@ -15,6 +15,7 @@ class WebChapter extends Model
 {
     protected $fillable = [
         'section_id',
+        'source_book_chapter_id',
         'title',
         'slug',
         'description',
