@@ -18,9 +18,6 @@ class WebLesson extends Model
         'title',
         'slug',
         'content',
-        'short_details',
-        'link',
-        'keyword',
         'order',
         'is_active',
     ];
@@ -46,9 +43,6 @@ class WebLesson extends Model
             'title' => $request->title,
             'slug' => $slug,
             'content' => $request->content,
-            'short_details' => $request->short_details,
-            'link' => $request->link,
-            'keyword' => $request->keyword,
             'order' => $request->order ?? 0,
             'is_active' => $request->has('is_active'),
         ]);
@@ -71,9 +65,6 @@ class WebLesson extends Model
             'title' => $request->title,
             'slug' => $slug,
             'content' => $request->content,
-            'short_details' => $request->short_details,
-            'link' => $request->link,
-            'keyword' => $request->keyword,
             'order' => $request->order ?? 0,
             'is_active' => $request->has('is_active'),
         ]);

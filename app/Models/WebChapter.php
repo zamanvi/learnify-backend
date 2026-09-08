@@ -95,9 +95,6 @@ class WebChapter extends Model
                 'title' => $item->title,
                 'slug' => $lessonSlug,
                 'content' => $item->details,
-                'short_details' => $item->short_details,
-                'link' => $item->link,
-                'keyword' => $item->keyword,
                 'order' => 0,
                 'is_active' => true,
             ]);
