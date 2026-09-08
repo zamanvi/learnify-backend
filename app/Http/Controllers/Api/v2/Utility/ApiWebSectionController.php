@@ -43,7 +43,7 @@ class ApiWebSectionController extends Controller
         }
         $chapters = WebChapter::where('is_active', true)
             ->with('section:id,name,slug')
-            ->orderBy('order')
+            ->orderBy('order')->orderBy('id')
             ->select('id', 'section_id', 'title', 'slug', 'description', 'order');
 
         if ($request->has('section_slug')) {
@@ -95,7 +95,7 @@ class ApiWebSectionController extends Controller
         }
         $lessonsQuery = WebLesson::where('is_active', true)
             ->with(['chapter:id,title,slug,section_id', 'chapter.section:id,name,slug'])
-            ->orderBy('order')
+            ->orderBy('order')->orderBy('id')
             ->select('id', 'web_chapter_id', 'title', 'slug', 'order');
 
         $message = 'Read all lessons';

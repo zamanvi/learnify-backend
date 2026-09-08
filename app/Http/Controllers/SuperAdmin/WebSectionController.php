@@ -30,7 +30,7 @@ class WebSectionController extends Controller
     public function chapters($sectionSlug)
     {
         $section = Section::where('slug', $sectionSlug)->firstOrFail();
-        $chapters = WebChapter::where('section_id', $section->id)->orderBy('order')->paginate(10);
+        $chapters = WebChapter::where('section_id', $section->id)->orderBy('order')->orderBy('id')->paginate(10);
 
         // For the "Copy from Book Chapter" convenience tools - read-only
         // lookups, never touch/modify the app's Book data.
@@ -191,7 +191,7 @@ class WebSectionController extends Controller
     public function lessons($chapterSlug)
     {
         $chapter = WebChapter::where('slug', $chapterSlug)->firstOrFail();
-        $lessons = WebLesson::where('web_chapter_id', $chapter->id)->orderBy('order')->paginate(10);
+        $lessons = WebLesson::where('web_chapter_id', $chapter->id)->orderBy('order')->orderBy('id')->paginate(10);
         return view('admin.websections.lessons', compact('chapter', 'lessons'));
     }
 
