@@ -77,6 +77,18 @@
                                 <textarea name="content" class="form-control" id="content" rows="6"></textarea>
                             </div>
                             <div class="form-group">
+                                <label for="short_details">Short Details (SEO meta description)</label>
+                                <textarea name="short_details" class="form-control" id="short_details" rows="2"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label for="link">Video Link (YouTube, optional)</label>
+                                <input type="text" name="link" class="form-control" id="link">
+                            </div>
+                            <div class="form-group">
+                                <label for="keyword">Keywords (SEO, optional)</label>
+                                <textarea name="keyword" class="form-control" id="keyword" rows="2"></textarea>
+                            </div>
+                            <div class="form-group">
                                 <label for="order">Order</label>
                                 <input type="number" name="order" class="form-control" id="order" value="0">
                             </div>
