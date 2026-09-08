@@ -13,7 +13,6 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 
 Route::prefix('grammer')->middleware(['grammer', 'throttle:60,1', 'cache.headers:public;max_age=300;etag'])->group(function () {
     Route::get('/chapters', [ChapterController::class, 'index']);
-    Route::get('/chapter/show/{id}', [ChapterController::class, 'show']);
     Route::get('/lessons', [LessonController::class, 'allForBattle']);
     Route::get('/lessons/{id}', [LessonController::class, 'chapters_lessons_create']);
     Route::get('/lesson/show/{id}', [LessonController::class, 'show']);
