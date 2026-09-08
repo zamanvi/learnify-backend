@@ -5,7 +5,6 @@ namespace App\Http\Controllers\SuperAdmin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Helpers\ApiResponse;
-use App\Models\Lesson;
 use App\Repositories\ChapterRepositoryInterface;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Response;
@@ -16,15 +15,6 @@ class ChapterController extends Controller
 
     public function __construct(ChapterRepositoryInterface $chapterRepository) {
         $this->chapterRepository = $chapterRepository;
-    }
-
-    /**
-     * Display a listing of the resource.
-     */
-    public function initial()
-    {
-        $lessons = Lesson::count();
-        return ApiResponse::respond(['lessons' => $lessons], true, 'All lessons count', Response::HTTP_OK);
     }
 
     /**
