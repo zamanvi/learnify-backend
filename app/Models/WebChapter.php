@@ -38,6 +38,71 @@ class WebChapter extends Model
         return $this->hasMany(WebLesson::class);
     }
 
+    /**
+     * Copies a BookChapter (+ its published BookItems) into a new
+     * WebChapter (+ WebLessons) under the given Section. Shared by
+     * WebSectionController (single + bulk copy tools) and any one-off
+     * data-fix migration that needs the exact same copy semantics, so
+     * both stay in sync.
+     *
+     * Copies the source's own slug (chapter and each item) as-is rather
+     * than regenerating from title - many BookChapter/BookItem slugs are
+     * hand-shortened/customized and no longer match make_slug(title),
+     * and the website's URLs (/book/{slug}) need to stay stable for SEO.
+     * Only falls back to an incremented slug if that exact slug is
+     * already taken by an unrelated WebChapter/WebLesson (tracked via
+     * source_book_chapter_id/source_book_item_id, not by title, so a
+     * manually-renamed copy still counts as "the same one").
+     *
+     * Only copies published (status=true) items, so drafts on the app
+     * side don't leak onto the live website. Strictly read-only against
+     * Book/BookChapter/BookItem - never writes to them.
+     */
+    public static function copyFromBookChapter(BookChapter $bookChapter, int $sectionId): self
+    {
+        $slug = $bookChapter->slug;
+        while (
+            self::where('slug', $slug)
+                ->where(fn ($q) => $q->whereNull('source_book_chapter_id')->orWhere('source_book_chapter_id', '!=', $bookChapter->id))
+                ->exists()
+        ) {
+            $slug = set_increment_slug(self::class, $slug);
+        }
+
+        $webChapter = self::create([
+            'section_id' => $sectionId,
+            'source_book_chapter_id' => $bookChapter->id,
+            'title' => $bookChapter->title,
+            'slug' => $slug,
+            'description' => null,
+            'order' => 0,
+            'is_active' => true,
+        ]);
+
+        $publishedItems = $bookChapter->items()->where('status', true)->get();
+        foreach ($publishedItems as $item) {
+            $lessonSlug = $item->slug;
+            while (
+                WebLesson::where('slug', $lessonSlug)
+                    ->where(fn ($q) => $q->whereNull('source_book_item_id')->orWhere('source_book_item_id', '!=', $item->id))
+                    ->exists()
+            ) {
+                $lessonSlug = set_increment_slug(WebLesson::class, $lessonSlug);
+            }
+            WebLesson::create([
+                'web_chapter_id' => $webChapter->id,
+                'source_book_item_id' => $item->id,
+                'title' => $item->title,
+                'slug' => $lessonSlug,
+                'content' => $item->details,
+                'order' => 0,
+                'is_active' => true,
+            ]);
+        }
+
+        return $webChapter;
+    }
+
     public static function createStore($request): bool
     {
         $slug = $request->slug != null ? make_slug($request->slug) : make_slug($request->title);

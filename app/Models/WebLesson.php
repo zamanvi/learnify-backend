@@ -14,6 +14,7 @@ class WebLesson extends Model
 {
     protected $fillable = [
         'web_chapter_id',
+        'source_book_item_id',
         'title',
         'slug',
         'content',

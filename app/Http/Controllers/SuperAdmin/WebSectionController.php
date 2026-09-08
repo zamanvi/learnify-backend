@@ -66,7 +66,7 @@ class WebSectionController extends Controller
             return back()->with('warning', 'Book chapter not found...!');
         }
 
-        $webChapter = $this->copyOneBookChapter($bookChapter, $request->section_id);
+        $webChapter = WebChapter::copyFromBookChapter($bookChapter, $request->section_id);
         $lessonCount = $webChapter->lessons()->count();
 
         return redirect(route('websections.lessons', $webChapter->slug))
@@ -95,13 +95,14 @@ class WebSectionController extends Controller
 
         $bookChapters = BookChapter::with('items')
             ->where('book_id', $request->book_id)
+            ->where('status', true)
             ->whereNotIn('id', $alreadyCopiedIds)
             ->get();
 
         $copiedChapters = 0;
         $copiedLessons = 0;
         foreach ($bookChapters as $bookChapter) {
-            $webChapter = $this->copyOneBookChapter($bookChapter, $request->section_id);
+            $webChapter = WebChapter::copyFromBookChapter($bookChapter, $request->section_id);
             $copiedChapters++;
             $copiedLessons += $webChapter->lessons()->count();
         }
@@ -112,41 +113,6 @@ class WebSectionController extends Controller
             : 'Nothing to copy - every chapter in this book is already copied into this section.';
 
         return redirect(route('websections.chapters', $section->slug))->with('success', $message);
-    }
-
-    private function copyOneBookChapter(BookChapter $bookChapter, int $sectionId): WebChapter
-    {
-        $slug = make_slug($bookChapter->title);
-        while (WebChapter::where('slug', $slug)->exists()) {
-            $slug = set_increment_slug(WebChapter::class, $slug);
-        }
-
-        $webChapter = WebChapter::create([
-            'section_id' => $sectionId,
-            'source_book_chapter_id' => $bookChapter->id,
-            'title' => $bookChapter->title,
-            'slug' => $slug,
-            'description' => null,
-            'order' => 0,
-            'is_active' => true,
-        ]);
-
-        foreach ($bookChapter->items as $item) {
-            $lessonSlug = make_slug($item->title);
-            while (WebLesson::where('slug', $lessonSlug)->exists()) {
-                $lessonSlug = set_increment_slug(WebLesson::class, $lessonSlug);
-            }
-            WebLesson::create([
-                'web_chapter_id' => $webChapter->id,
-                'title' => $item->title,
-                'slug' => $lessonSlug,
-                'content' => $item->details,
-                'order' => 0,
-                'is_active' => true,
-            ]);
-        }
-
-        return $webChapter;
     }
 
     public function chapterStore(Request $request)
