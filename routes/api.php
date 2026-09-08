@@ -3,7 +3,6 @@
 use App\Http\Controllers\SuperAdmin\ChapterController;
 use App\Http\Controllers\SuperAdmin\LessonController;
 use App\Http\Controllers\SuperAdmin\WordController;
-use App\Http\Controllers\SuperAdmin\NoticeController;
 use App\Http\Controllers\SuperAdmin\SettingController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -20,7 +19,6 @@ Route::prefix('grammer')->middleware(['grammer', 'throttle:60,1', 'cache.headers
     Route::get('/lesson/show/{id}', [LessonController::class, 'show']);
     Route::get('/words/{id}', [WordController::class, 'chapters_lessons_words_create']);
     Route::get('/word/show/{id}', [WordController::class, 'show']);
-    Route::get('/notices', [NoticeController::class, 'apiIndex']);
     Route::get('/settings', [SettingController::class, 'apiIndex']);
 });
 

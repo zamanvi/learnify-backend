@@ -3,26 +3,13 @@
 namespace App\Http\Controllers\SuperAdmin;
 
 use App\Http\Controllers\Controller;
-use App\Helpers\ApiResponse;
 use App\Models\Notice;
 use App\Services\FcmService;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
 use Illuminate\Support\Str;
 
 class NoticeController extends Controller
 {
-    /**
-     * API: return notices for grammar app
-     */
-    public function apiIndex()
-    {
-        $notices = Notice::where('app', 'grammar')
-            ->latest()
-            ->paginate(20);
-        return ApiResponse::respond(['notices' => $notices], true, 'All notices', Response::HTTP_OK);
-    }
-
     /**
      * Display a listing of the resource.
      */
