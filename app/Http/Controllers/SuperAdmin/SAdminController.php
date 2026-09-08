@@ -206,15 +206,4 @@ class SAdminController extends Controller
         $this->notification($user->id, '"' . $user->name . '" delete page "' . $page->name . '" successful.!',  'page', '1');
         return redirect(route('page.create'))->with('warning', 'page "' . $page->name . '" delete successfull.!');
     }
-    public function superadmin_slug(Request $request)
-    {
-        DB::transaction(function () {
-            User::chunk(100, function ($users) {
-                foreach ($users as $user) {
-                    $slug = 'abmn-slug-' . $user->id . '-' . get_random_number(10);
-                    $user->update(['slug' => $slug]);
-                }
-            });
-        });
-    }
 }
