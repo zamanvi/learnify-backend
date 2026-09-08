@@ -19,10 +19,7 @@
                     <li class="@if (Route::is('adminlist')) active @endif"><a href="{{ route('adminlist') }}"><i class="lab la-elementor"></i>Admin</a></li>
                     {{-- <li><a href="{{ route('event.index') }}"><i class="lab la-elementor"></i>Event Management</a></li> --}}
 
-                    <li class="@if (Route::is(['chapters.index', 'chapters.show', 'chapters.edit', 'lessons.index', 'lessons.show', 'lessons.edit' , 'words.index', 'words.show', 'words.edit', 'chapters.lessons.create', 'chapters.lessons.words.create'])) active @endif">
-                        <a href="{{ route('chapters.index') }}" class="iq-waves-effect collapsed">
-                            <i class="ri-home-4-line"></i><span>Vocabulary Management</span></a>
-                    </li>
+                    {{-- Vocabulary Management moved to English Book in BD (App) → Vocabulary section card --}}
                     <li><a href="{{ route('notices.index') }}"><i class="lab la-elementor"></i>Notices Management</a></li>
                     <li><a href="{{ route('book.index') }}"><i class="lab la-elementor"></i>English Book in BD (App)</a></li>
                     <li><a href="{{ route('wizard.chapter.index') }}"><i class="lab la-elementor"></i>Wizard Management</a></li>
