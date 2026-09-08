@@ -24,7 +24,7 @@
                             <i class="ri-home-4-line"></i><span>Vocabulary Management</span></a>
                     </li>
                     <li><a href="{{ route('notices.index') }}"><i class="lab la-elementor"></i>Notices Management</a></li>
-                    <li><a href="{{ route('book.index') }}"><i class="lab la-elementor"></i>Book Management</a></li>
+                    <li><a href="{{ route('book.index') }}"><i class="lab la-elementor"></i>English Book in BD (App)</a></li>
                     <li><a href="{{ route('wizard.chapter.index') }}"><i class="lab la-elementor"></i>Wizard Management</a></li>
                     <li><a href="{{ route('websections.index') }}"><i class="lab la-elementor"></i>Website Sections</a></li>
                     <li class="@if (Route::is(['alluser',])) active @endif">
