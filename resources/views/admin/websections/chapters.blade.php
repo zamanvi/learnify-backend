@@ -120,8 +120,10 @@
                         <h5 class="mt-3">Or copy ALL chapters from a Book</h5>
                         <p class="text-muted">Skips any chapter already copied into this section (tracked
                             automatically), so it's safe to re-run after adding new chapters to a Book.</p>
-                        <form method="POST" action="{{ route('websections.chapter.copy-all-from-book') }}"
-                              onsubmit="return confirm('Copy every not-yet-copied chapter from this book into ' + '{{ $section->name }}' + '? This may create several chapters at once.');">
+                        <form method="POST" action="{{ route('websections.chapter.copy-all-from-book') }}">
+                            {{-- No confirm() here on purpose: this action only creates new rows
+                                 (duplicate-safe via source_book_chapter_id), never deletes or
+                                 overwrites anything, so an "are you sure" gate isn't warranted. --}}
                             @csrf
                             <input type="hidden" name="section_id" value="{{ $section->id }}">
                             <div class="form-group">
