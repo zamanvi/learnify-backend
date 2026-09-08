@@ -43,16 +43,12 @@ Route::middleware(['auth:sanctum',config('jetstream.auth_session'),'verified'])-
     // Superadmin & admin start - restricted to super admins only (user_type == 1)
     Route::middleware('super_admin')->group(function () {
     Route::get('/clear-cash', [HomeController::class, 'clear_cash']);
-    // Route::get('/old-teacher', [HomeController::class, 'old_teacher']);
     Route::get('/superadmin', [HomeController::class, 'superadmin'])->name('superadmin');
+
+    {{-- Teacher approval system removed - UI removed 2026-09-08, methods & routes removed 2026-09-08 --}}
 
     Route::get('/adminlist', [SAdminController::class, 'adminlist'])->name('adminlist');
     Route::get('/alluser', [SAdminController::class, 'alluser'])->name('alluser');
-    Route::get('approved/teacher', [SAdminController::class, 'admin_approval_teacher_index'])->name('admin.approval.teacher.index');
-    Route::get('pending/teacher', [SAdminController::class, 'admin_approval_teacher_pending'])->name('admin.approval.teacher.pending');
-    Route::get('unapproved/teacher', [SAdminController::class, 'admin_approval_teacher_unapproved'])->name('admin.approval.teacher.unapproved');
-    Route::get('teacher/edit/{id}/{type}', [SAdminController::class, 'admin_approval_teacher_edit'])->name('admin.approval.teacher.edit');
-    Route::put('teacher/approve/{id}', [SAdminController::class, 'admin_approval_teacher_approve'])->name('admin.approval.teacher.approve');
     Route::get('/adminlist/{id}', [SAdminController::class, 'adminview']);
     Route::delete('/adminlist/{id}', [SAdminController::class, 'admindelete']);
     Route::post('/createadmin', [SAdminController::class, 'createadmin'])->name('createadmin');

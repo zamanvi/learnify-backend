@@ -21,7 +21,6 @@ class SAdminController extends Controller
     use HttpWebResponse;
     public function adminlist()
     {
-        // $adminlist = User::paginate(10);
         $adminlist = User::get();
         $allclasslist = AllClass::get();
         return view('admin.admin.index', [
@@ -31,7 +30,6 @@ class SAdminController extends Controller
     }
     public function adminview($id)
     {
-        // $adminlist = User::paginate(10);
         $admin = User::find($id);
         $adminlist = User::get();
         return view('admin.admin.show', [
@@ -42,7 +40,6 @@ class SAdminController extends Controller
 
     public function admindelete($id)
     {
-        // $adminlist = User::paginate(10);
         $admin = User::find($id);
         $admin->delete();
         return redirect('/adminlist')->with('warning', 'Admin deleted successful.!');
@@ -77,56 +74,8 @@ class SAdminController extends Controller
         $users = User::where('user_type', '2')->paginate(20);
         return view('admin.pages.user', compact('users'));
     }
-    public function admin_approval_teacher_index()
-    {
-        return $this->admin_approval_teacher('Approved');
-    }
-    public function admin_approval_teacher_pending()
-    {
-        return $this->admin_approval_teacher('Pending');
-    }
-    public function admin_approval_teacher_unapproved()
-    {
-        return $this->admin_approval_teacher('Unapproved');
-    }
 
-    public function admin_approval_teacher($viewType)
-    {
-        $query = User::where('as_user', 'teacher');
-        switch ($viewType) {
-            case 'Pending':
-                $query->where('update_status', 2);
-                break;
-            case 'Unapproved':
-                $query->where('update_status', 3);
-                break;
-            default:
-                $query->where('update_status', 1);
-                break;
-        }
-        $users = $query->paginate(20);
-        return view('admin.approval.index', compact('users', 'viewType', 'query'));
-    }
-
-    public function admin_approval_teacher_edit($id, $type)
-    {
-        $user = User::find($id);
-        return view('admin.approval.edit', compact('user', 'type'));
-    }
-    public function admin_approval_teacher_approve(Request $request, $id)
-    {
-        $user = User::find($id);
-        $data = [];
-        $fillableFields = ['title_description', 'about_teacher', 'about_teaching', 'remark', 'about_student'];
-        foreach ($fillableFields as $field) {
-            if ($request->filled($field)) {
-                $data[$field] = $request->input($field);
-            }
-        }
-        $user->update(array_merge($data, ['as_user' => 'teacher', 'is_first' => false, 'status' => true, 'update_status' => $request->type]));
-        $route = $request->type == 1 ? 'admin.approval.teacher.index' : ($request->type == 2 ? 'admin.approval.teacher.pending' : 'admin.approval.teacher.unapproved');
-        return redirect()->route($route)->with('success', 'Teacher Update successfull...!');
-    }
+    {{-- Teacher approval system removed (UI removed 2026-09-08, methods removed 2026-09-08) --}}
 
     public function app_version(SettingRepositoryInterface $repo)
     {
