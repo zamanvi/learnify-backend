@@ -33,16 +33,7 @@
                             <li><a href="#"><i class="las la-house-damage"></i>As a Student</a></li>
                         </ul>
                     </li>
-                    <li>
-                        <a href="#asateacher" class="iq-waves-effect collapsed" data-toggle="collapse"
-                            aria-expanded="false"><i class="ri-home-4-line"></i><span>As A Teacher</span><i
-                                class="ri-arrow-right-s-line iq-arrow-right"></i></a>
-                        <ul id="asateacher" class="iq-submenu collapse" data-parent="#iq-sidebar-toggle">
-                            <li><a href="{{route('admin.approval.teacher.index')}}"><i class="las la-house-damage"></i>Approved Teacher</a></li>
-                            <li><a href="{{route('admin.approval.teacher.pending')}}"><i class="las la-house-damage"></i>Pending Teacher</a></li>
-                            <li><a href="{{route('admin.approval.teacher.unapproved')}}"><i class="las la-house-damage"></i>Unapproved Teacher</a></li>
-                        </ul>
-                    </li>
+                    {{-- As A Teacher section removed - not used by active systems (Apps/Website) --}}
                     <li>
                         <a href="#settings" class="iq-waves-effect collapsed" data-toggle="collapse"
                             aria-expanded="false"><i class="ri-home-4-line"></i><span>Settings</span><i
