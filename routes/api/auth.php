@@ -29,9 +29,3 @@ Route::prefix('app')->middleware(['app'])->group(function () {
         Route::get('refresh-token', [AuthController::class, 'refreshToken']);
     });
 });
-
-// Kept at the top-level path (not under /app) so existing callers don't
-// break, but now requires the same x-api-key: app header as every other
-// mobile-facing endpoint - this was previously reachable by anyone with
-// no auth at all, including attacker-controlled `points`.
-Route::post('/old_user_create', [AuthController::class, 'old_user_create'])->middleware(['app']);

@@ -21,47 +21,6 @@ use Illuminate\Support\Str;
 class AuthController extends Controller
 {
     use HttpAppResponse;
-    // old user handaling,
-    public function old_user_create(Request $request)
-    {
-        $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
-            'password' => 'required',
-            'password_confirmation' => 'required',
-            'terms' => Jetstream::hasTermsAndPrivacyPolicyFeature() ? ['accepted', 'required'] : '',
-        ]);
-        $user = User::create([
-            'user_type' => '2',
-            'redrose_id' => $request['redrose_id'],
-            'name' => $request['name'],
-            'email' => $request['email'],
-            'password' => Hash::make($request['password']),
-            'date' => now()->toDateString(),
-            'once' => 'no',
-            'phone' => $request['phone'],
-            'points' => $request['points'],
-        ]);
-        if ($user) {
-            Friend::create([
-                'user_id' => $user->id,
-                'friend_id' => '2',
-                'type' => '1',
-            ]);
-            Notification::create([
-                'user_id' => $user->id,
-                'name' => $request['name'] . ' User Create from app successful.!',
-                'date' => now()->toDateString(),
-                'time' => now()->toTimeString(),
-                'type' => 'user',
-                'status' => '1',
-            ]);
-            return $this->apiResponse($user, true, 'User Created Successfull.!', AppResponse::HTTP_OK);
-        } else {
-            return $this->apiResponse('', false, "User can't Create.!", AppResponse::HTTP_UNPROCESSABLE_ENTITY);
-        }
-    }
-    // old user handaling end
     // Login in function start
     public function login(Request $request)
     {
