@@ -122,6 +122,15 @@ return new class extends Migration
         $originalWordIds = array_merge(array_map(fn ($w) => $w->id, $cameWords), array_map(fn ($w) => $w->id, $probWords));
         sort($originalWordIds);
 
+        // The old "probable" lesson keeps an importance % (95..45) in the
+        // antonyms column, but its column label says "English Synonym". When
+        // every value really is a number, the new theme lessons get an honest
+        // "importance %" label instead.
+        $probNumeric = true;
+        foreach ($probWords as $w) {
+            if (!ctype_digit(trim((string) $w->antonyms))) { $probNumeric = false; break; }
+        }
+
         // ── backup table (DDL commits implicitly, so it is created BEFORE the transaction) ──
         Schema::create(self::BACKUP, function ($t) {
             $t->id();
@@ -131,7 +140,7 @@ return new class extends Migration
         });
 
         try {
-            DB::transaction(function () use ($came, $prob, $plan, $blocks, $originalWordIds) {
+            DB::transaction(function () use ($came, $prob, $plan, $blocks, $originalWordIds, $probNumeric) {
                 $now = now();
 
                 // 1. backup everything we are about to change
@@ -174,7 +183,11 @@ return new class extends Migration
                     $assign[$newId] = $p['ids'];
                 }
                 foreach ($blocks as $b) {
-                    $newId = DB::table('lessons')->insertGetId($template($prob, $b['title']));
+                    $row = $template($prob, $b['title']);
+                    if ($probNumeric) {
+                        $row['col4_label'] = '📊 গুরুত্ব %';
+                    }
+                    $newId = DB::table('lessons')->insertGetId($row);
                     DB::table(self::BACKUP)->insert(['kind' => 'new_lesson', 'ref_id' => $newId, 'payload' => '{}']);
                     $assign[$newId] = $b['ids'];
                 }
