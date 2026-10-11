@@ -29,6 +29,8 @@ use Illuminate\Support\Facades\Schema;
  *  - All data changes happen in one transaction and are verified before commit;
  *    any problem rolls everything back. Exceptions are caught and logged so a
  *    problem here can never stop the server from booting.
+ *  - Before the first change it copies chapters/lessons/words/progress/unlocked
+ *    tables to bak_bcs_<date>_<table> (full snapshots, kept until dropped).
  *  - A backup table (bcs_lesson_split_backup) stores the original lesson_id of
  *    every word, the original lesson rows and the progress rows that are reset,
  *    so down() restores the exact previous state.
@@ -129,6 +131,22 @@ return new class extends Migration
         $probNumeric = true;
         foreach ($probWords as $w) {
             if (!ctype_digit(trim((string) $w->antonyms))) { $probNumeric = false; break; }
+        }
+
+        // ── full-table snapshots, taken by the server itself (so no database
+        // credentials are handled outside it). The tables are small; they stay
+        // until an admin drops them. Any failure here aborts BEFORE anything is
+        // changed (the exception is caught and logged in up()). ──
+        $snapshotTag = 'bak_bcs_' . date('Ymd');
+        foreach (['chapters', 'lessons', 'words', 'user_lesson_round_progress', 'unlocked_lessons'] as $t) {
+            $copy = "{$snapshotTag}_{$t}";
+            if (!Schema::hasTable($t) || Schema::hasTable($copy)) { continue; }
+            DB::statement("CREATE TABLE `{$copy}` AS SELECT * FROM `{$t}`");
+            $a = DB::table($t)->count();
+            $b = DB::table($copy)->count();
+            if ($a !== $b) {
+                throw new \RuntimeException("snapshot of {$t} incomplete ({$b}/{$a} rows)");
+            }
         }
 
         // ── backup table (DDL commits implicitly, so it is created BEFORE the transaction) ──
