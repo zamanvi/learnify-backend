@@ -45,7 +45,7 @@ Route::middleware(['auth:sanctum',config('jetstream.auth_session'),'verified'])-
     Route::get('/clear-cash', [HomeController::class, 'clear_cash']);
     Route::get('/superadmin', [HomeController::class, 'superadmin'])->name('superadmin');
 
-    {{-- Teacher approval system removed - UI removed 2026-09-08, methods & routes removed 2026-09-08 --}}
+    // Teacher approval system removed - UI removed 2026-09-08, methods & routes removed 2026-09-08
 
     Route::get('/adminlist', [SAdminController::class, 'adminlist'])->name('adminlist');
     Route::get('/alluser', [SAdminController::class, 'alluser'])->name('alluser');
