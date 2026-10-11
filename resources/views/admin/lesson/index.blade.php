@@ -43,6 +43,18 @@
                                 <input type="checkbox" name="is_premium" id="is_premium" class="form-check-input" value="1">
                                 <label for="is_premium" class="form-check-label">Premium (unlock costs 50 Lipto)</label>
                             </div>
+                            <div class="form-group">
+                                <label for="layout">Word list layout in the app</label>
+                                <select name="layout" id="layout" class="form-control">
+                                    <option value="">Automatic (recommended)</option>
+                                    <option value="stacked">Stacked - word above its meaning (long words)</option>
+                                    <option value="compact">Side by side - word and meaning in columns (short words)</option>
+                                </select>
+                                <small class="form-text text-muted">
+                                    Automatic picks stacked when many words in this lesson are long. Choose a fixed
+                                    layout only if the automatic choice looks wrong for this lesson.
+                                </small>
+                            </div>
                             <input type="submit" class="btn btn-primary" value="Submit" />
                             <input type="reset" class="btn iq-bg-danger" value="Cancel" />
                         </form>

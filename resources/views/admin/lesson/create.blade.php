@@ -38,6 +38,18 @@
                                 <input type="text" name="col3_label" class="form-control mb-2" placeholder="Column 3 name (e.g. Synonyms)">
                                 <input type="text" name="col4_label" class="form-control" placeholder="Column 4 name (e.g. Antonyms)">
                             </div>
+                            <div class="form-group">
+                                <label for="layout">Word list layout in the app</label>
+                                <select name="layout" id="layout" class="form-control">
+                                    <option value="">Automatic (recommended)</option>
+                                    <option value="stacked">Stacked - word above its meaning (long words)</option>
+                                    <option value="compact">Side by side - word and meaning in columns (short words)</option>
+                                </select>
+                                <small class="form-text text-muted">
+                                    Automatic picks stacked when many words in this lesson are long. Choose a fixed
+                                    layout only if the automatic choice looks wrong for this lesson.
+                                </small>
+                            </div>
                             <input type="submit" class="btn btn-primary" value="Submit" />
                             <input type="reset" class="btn iq-bg-danger" value="Cancel" />
                         </form>

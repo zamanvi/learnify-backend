@@ -67,6 +67,7 @@ class WordController extends Controller
                     'locked_remaining' => max(0, $total - $teaser->count()),
                     'lesson_pattern' => $lesson->pattern ?? null,
                     'hint_text' => $lesson->hint_text,
+                    'layout' => $lesson->layout ?? null,
                     // Per-lesson custom column names. Sent as null unless this
                     // specific lesson actually has one of col1_label..col4_label
                     // set - see the comment on the non-premium branch below for
@@ -84,6 +85,7 @@ class WordController extends Controller
                 'unlocked' => true,
                 'lesson_pattern' => $lesson->pattern ?? null,
                 'hint_text' => $lesson->hint_text,
+                'layout' => $lesson->layout ?? null,
                 // null for every lesson that hasn't been given custom column
                 // labels (i.e. every lesson that exists right now) - the app
                 // only switches its header logic when this key is non-null,

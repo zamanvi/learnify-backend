@@ -65,6 +65,9 @@ class LessonController extends Controller
         // Lesson inherits its type from its parent Chapter
         // (UI no longer allows independent type selection)
         $data['type'] = $chapter->type;
+        if (!\Illuminate\Support\Facades\Schema::hasColumn('lessons', 'layout')) {
+            unset($data['layout']);
+        }
         if (\Illuminate\Support\Facades\Schema::hasColumn('lessons', 'is_premium')) {
             $data['is_premium'] = $request->has('is_premium');
         }
@@ -114,6 +117,9 @@ class LessonController extends Controller
         // Lesson type cannot be edited; it always matches its parent Chapter type
         // (UI deliberately removed the type dropdown to prevent confusion)
         $data['type'] = $chapter->type;
+        if (!\Illuminate\Support\Facades\Schema::hasColumn('lessons', 'layout')) {
+            unset($data['layout']);
+        }
         if (\Illuminate\Support\Facades\Schema::hasColumn('lessons', 'is_premium')) {
             $data['is_premium'] = $request->has('is_premium');
         }

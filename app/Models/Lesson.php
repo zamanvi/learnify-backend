@@ -11,8 +11,22 @@ class Lesson extends Model
     protected $fillable = [
         'title', 'type', 'chapter_id', 'status', 'is_premium', 'pattern',
         'col1_label', 'col2_label', 'col3_label', 'col4_label',
+        'layout',
     ];
     protected $casts = ['status' => 'bool', 'is_premium' => 'bool'];
+
+    /**
+     * Word-list row layout of this lesson in the app:
+     *   null      = automatic (app decides from the lesson's own words)
+     *   'stacked' = word over meaning on every row
+     *   'compact' = word and meaning side by side on every row
+     * Anything else (empty form value, typos) is stored as null = automatic.
+     */
+    public function setLayoutAttribute($value): void
+    {
+        $v = is_string($value) ? strtolower(trim($value)) : null;
+        $this->attributes['layout'] = in_array($v, ['stacked', 'compact'], true) ? $v : null;
+    }
 
     public function chapter()
     {
