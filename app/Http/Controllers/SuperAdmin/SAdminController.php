@@ -75,7 +75,7 @@ class SAdminController extends Controller
         return view('admin.pages.user', compact('users'));
     }
 
-    {{-- Teacher approval system removed (UI removed 2026-09-08, methods removed 2026-09-08) --}}
+    // Teacher approval system removed (UI removed 2026-09-08, methods removed 2026-09-08)
 
     public function app_version(SettingRepositoryInterface $repo)
     {
