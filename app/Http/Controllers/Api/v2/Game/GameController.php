@@ -83,7 +83,10 @@ class GameController extends Controller
     // GET /api/game/daily-word
     public function daily_word()
     {
-        $word = $this->randomWord(Word::where('status', 1));
+        // Same word for everyone for the whole (Dhaka) day - it used to be a
+        // fresh random pick on every request, so the "Word of the Day" card
+        // changed each time the Home tab was opened.
+        $word = $this->wordForDay(Word::where('status', 1), now('Asia/Dhaka')->toDateString());
 
         if (!$word) {
             return response()->json([
@@ -357,6 +360,10 @@ class GameController extends Controller
                 'next_round_unlocked'=> $result['nextUnlocked'],
                 'streak_days'        => $result['streakDays'],
                 'total_xp'           => $user->points,
+                // Same formula as streak()/add_xp() - lets the client refresh
+                // its cached rank right after a round instead of showing a
+                // stale one until the next Home visit.
+                'rank'               => User::where('points', '>', $user->points ?? 0)->count() + 1,
             ],
         ]);
     }
@@ -366,19 +373,31 @@ class GameController extends Controller
     // of relying on a separate client-fired POST.
     private function bumpStreak(User $user): int
     {
-        $today      = now()->toDateString();
-        $lastPlayed = optional($user->last_played_at)->toDateString();
+        $today      = $this->dhakaDate(now());
+        $lastPlayed = $user->last_played_at ? $this->dhakaDate($user->last_played_at) : null;
 
         if ($lastPlayed === $today) {
             return $user->streak_days ?? 0;
         }
 
-        $yesterday = now()->subDay()->toDateString();
+        $yesterday = $this->dhakaDate(now()->subDay());
         $newStreak = ($lastPlayed === $yesterday) ? (($user->streak_days ?? 0) + 1) : 1;
 
-        $user->update(['streak_days' => $newStreak, 'last_played_at' => now()]);
+        // forceFill: streak_days / last_played_at are not in User::$fillable,
+        // so the plain update([...]) this used to be silently dropped every
+        // attribute - the response said "streak 1" but nothing was ever
+        // stored (streak stayed 0, last_played_at stayed NULL for everyone).
+        $user->forceFill(['streak_days' => $newStreak, 'last_played_at' => now()])->save();
 
         return $newStreak;
+    }
+
+    // Calendar day in Dhaka for a timestamp - the same day boundary the daily
+    // Lipto cap already uses, so "played today" means the user's own day, not
+    // the UTC day that flips at 6 AM in Bangladesh.
+    private function dhakaDate($moment): string
+    {
+        return \Illuminate\Support\Carbon::parse($moment)->setTimezone('Asia/Dhaka')->toDateString();
     }
 
     // Mirrors LiptoController::earn()'s daily-cap logic so mystery-box
@@ -400,6 +419,13 @@ class GameController extends Controller
         }
 
         $locked->increment('lipto_balance', $grantable);
+
+        // Same one-way tier ladder LiptoController::earn() maintains - without
+        // this a mystery-box win never raised lipto_max_balance, so spending
+        // afterwards demoted the tier badge below what the user had reached.
+        DB::table('users')->where('id', $locked->id)->update([
+            'lipto_max_balance' => DB::raw('GREATEST(lipto_max_balance, ' . (int) $locked->lipto_balance . ')'),
+        ]);
 
         LiptoTransaction::create([
             'user_id'       => $locked->id,
@@ -464,14 +490,27 @@ class GameController extends Controller
     // GET /api/game/leaderboard
     public function leaderboard()
     {
+        // Competition ranking (ties share a rank) so a row here matches the
+        // rank streak()/add_xp() report for the same user - those count
+        // "users with more points + 1", which is what a plain index+1 broke
+        // for anyone tied with others (Profile #27 vs Leaderboard #23).
+        // id is the tiebreaker so the order of tied rows is stable.
+        $prevPoints = null;
+        $prevRank   = 0;
         $users = User::select('id', 'name', 'points')
             ->orderByDesc('points')
+            ->orderBy('id')
             ->limit(50)
             ->get()
-            ->map(function ($u, $index) {
+            ->map(function ($u, $index) use (&$prevPoints, &$prevRank) {
+                $points = (int) $u->points;
+                $rank   = ($prevPoints !== null && $points === $prevPoints) ? $prevRank : $index + 1;
+                $prevPoints = $points;
+                $prevRank   = $rank;
+
                 return [
                     'id'     => $u->id,
-                    'rank'   => $index + 1,
+                    'rank'   => $rank,
                     'name'   => $u->name,
                     'points' => $u->points,
                 ];
@@ -508,7 +547,8 @@ class GameController extends Controller
     public function update_streak(Request $request)
     {
         $user = Auth::user();
-        $alreadyUpdatedToday = optional($user->last_played_at)->toDateString() === now()->toDateString();
+        $alreadyUpdatedToday = $user->last_played_at
+            && $this->dhakaDate($user->last_played_at) === $this->dhakaDate(now());
 
         $streakDays = $this->bumpStreak($user);
 
@@ -520,16 +560,20 @@ class GameController extends Controller
         ]);
     }
 
-    // Picks one random row from the given query without ORDER BY RAND(),
-    // which forces a full-table scan+sort on large tables.
-    private function randomWord($query)
+    // Picks one row for the given calendar day without ORDER BY RAND() (full
+    // table scan+sort on a large table). The day string is hashed into the
+    // id range so the pick is stable within a day and different across days;
+    // crc32() is used instead of mt_srand() so the global RNG that
+    // rollMysteryBox() relies on is never reseeded.
+    private function wordForDay($query, string $day)
     {
         $bounds = (clone $query)->selectRaw('MIN(id) as min_id, MAX(id) as max_id')->first();
         if (!$bounds || $bounds->min_id === null) {
             return null;
         }
-        $randomId = rand($bounds->min_id, $bounds->max_id);
-        return (clone $query)->where('id', '>=', $randomId)->orderBy('id')->first()
+        $span     = (int) $bounds->max_id - (int) $bounds->min_id + 1;
+        $targetId = (int) $bounds->min_id + ((crc32($day) & 0x7fffffff) % $span);
+        return (clone $query)->where('id', '>=', $targetId)->orderBy('id')->first()
             ?? (clone $query)->orderBy('id')->first();
     }
 }
