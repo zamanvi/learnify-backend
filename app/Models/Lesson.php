@@ -43,7 +43,16 @@ class Lesson extends Model
             'standard' => 'শব্দ | অর্থ',                    // Word | Meaning
             'exam' => 'অর্থ | পরীক্ষা %',                   // Meaning | Exam %
             'medical' => 'অর্থ | উৎস / %',                  // Meaning | Source / %
-            default => 'শব্দ | অর্থ'                        // Default fallback
+            // No pattern: the app writes this string over the headers of the
+            // two RIGHT-hand columns (words.synonyms / words.antonyms). The old
+            // fallback "শব্দ | অর্থ" (Word | Meaning) is the label of the FIRST
+            // two columns, so it hid the correct header: verb lessons showed
+            // "শব্দ / অর্থ" above Verb 2 / Verb 3, and plain vocabulary lessons
+            // showed it above real synonyms / antonyms. Use the same labels the
+            // app itself shows for the lesson type.
+            default => $this->type === 'verb'
+                ? 'Verb 2 | Verb 3'
+                : 'সমার্থক শব্দ | বিপরীত শব্দ'          // Synonym | Antonym
         };
     }
 
