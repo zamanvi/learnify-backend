@@ -20,6 +20,9 @@ use Illuminate\Support\Str;
 
 class AuthController extends Controller
 {
+    // Max referral bonuses (50 Lipto each) one referrer can earn per Dhaka day.
+    const REFERRAL_DAILY_CAP = 10;
+
     use HttpAppResponse;
     // Login in function start
     public function login(Request $request)
@@ -113,6 +116,22 @@ class AuthController extends Controller
                 if ($referrer && $referrer->id !== $user->id) {
                     \Illuminate\Support\Facades\DB::transaction(function () use ($referrer, $user) {
                         $lockedReferrer = User::whereKey($referrer->id)->lockForUpdate()->first();
+
+                        // Per-referrer daily cap (Dhaka day). Every referral is
+                        // worth a premium lesson (UNLOCK_COST = 50), and signup
+                        // has no email verification, so without a cap one
+                        // person could mint unlimited Lipto with throwaway
+                        // accounts. The signup itself is never blocked - only
+                        // the bonus is withheld once the cap is reached.
+                        $dayStart = now('Asia/Dhaka')->startOfDay()->setTimezone(config('app.timezone'));
+                        $grantedToday = \App\Models\LiptoTransaction::where('user_id', $lockedReferrer->id)
+                            ->where('type', 'referral_bonus')
+                            ->where('created_at', '>=', $dayStart)
+                            ->count();
+                        if ($grantedToday >= self::REFERRAL_DAILY_CAP) {
+                            return;
+                        }
+
                         $lockedReferrer->increment('lipto_balance', 50);
 
                         \Illuminate\Support\Facades\DB::table('users')->where('id', $lockedReferrer->id)
