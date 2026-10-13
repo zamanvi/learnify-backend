@@ -25,6 +25,9 @@ class ApiBookController extends Controller
     public function book_show(Request $request, $slug)
     {
         $book = Book::where('slug', $slug)->first();
+        if (!$book) {
+            return $this->apiResponse(null, false, 'Book not found', AppResponse::HTTP_NOT_FOUND);
+        }
         $book->increment('pageview');
         $book->makeHidden(['created_at', 'updated_at']);
         return $this->apiResponse(['book' => $book], true, 'Read Single book.', AppResponse::HTTP_OK);
@@ -38,6 +41,9 @@ class ApiBookController extends Controller
             ->select('id', 'book_id', 'title', 'slug', 'status', 'pageview');
         if ($request->has('book_slug')) {
             $book = Book::where('slug', $request->book_slug)->first();
+            if (!$book) {
+                return $this->apiResponse(null, false, 'Book not found', AppResponse::HTTP_NOT_FOUND);
+            }
             $bookChapters->where('book_id', $book->id);
             $message = 'Read all Chapters by book';
         } else {
@@ -54,10 +60,10 @@ class ApiBookController extends Controller
     public function book_chapter_show(Request $request, $slug)
     {
         $bookChapter = BookChapter::with('book:id,title')->where('slug', $slug)->first();
-        $bookChapter->increment('pageview');
         if (!$bookChapter) {
             return $this->apiResponse(null, false, 'Chapter not found', AppResponse::HTTP_NOT_FOUND);
         }
+        $bookChapter->increment('pageview');
 
         $bookChapter->book_title = $bookChapter->book ? $bookChapter->book->title : null;
         unset($bookChapter->book);
@@ -76,6 +82,9 @@ class ApiBookController extends Controller
 
         if ($request->has('book_slug')) {
             $book = Book::where('slug', $request->book_slug)->first();
+            if (!$book) {
+                return $this->apiResponse(null, false, 'Book not found', AppResponse::HTTP_NOT_FOUND);
+            }
             $bookChapters->where('book_id', $book->id);
             $message = 'Read all Chapters by book';
         } else {
@@ -100,6 +109,9 @@ class ApiBookController extends Controller
         $message = 'Read all Items';
         if ($request->has('chapter_slug')) {
             $bookChapter = BookChapter::where('slug', $request->chapter_slug)->first();
+            if (!$bookChapter) {
+                return $this->apiResponse(null, false, 'Chapter not found', AppResponse::HTTP_NOT_FOUND);
+            }
             $itemsQuery->where('chapter_id', $bookChapter->id);
             $message = 'Read all Items by book';
         }

@@ -77,7 +77,10 @@ class WordController extends Controller
             }
         }
 
-        $words = $this->wordRepository->getAllById($id);
+        // Optional ?per_page= is honoured for the app only (default page
+        // size is unchanged); the admin view keeps its own paging.
+        $perPage = $clientType === 'app' ? $this->requestedPerPage($request) : null;
+        $words = $this->wordRepository->getAllById($id, $perPage);
         if ($clientType === 'app') {
             return ApiResponse::respond([
                 'words' => $words,

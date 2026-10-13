@@ -23,7 +23,10 @@ class ChapterController extends Controller
     public function index(Request $request)
     {
         $clientType = get_client_type() ?? 'web';
-        $chapters = $this->chapterRepository->getAll($request->query('type'));
+        // Optional ?per_page= is honoured for the app only (default page
+        // size is unchanged); the admin view keeps its own paging.
+        $perPage = $clientType === 'app' ? $this->requestedPerPage($request) : null;
+        $chapters = $this->chapterRepository->getAll($request->query('type'), $perPage);
         if ($clientType === 'app') {
             return ApiResponse::respond(['chapters' => $chapters], true, 'All chapters', Response::HTTP_OK);
         }else{

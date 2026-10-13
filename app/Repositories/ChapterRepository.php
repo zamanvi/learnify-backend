@@ -13,12 +13,12 @@ class ChapterRepository  implements ChapterRepositoryInterface
         $this->chapter = $chapter;
     }
 
-    public function getAll(?string $type = null)
+    public function getAll(?string $type = null, ?int $perPage = null)
     {
         return $this->chapter
             ->withCount('lessons')
             ->when($type, fn ($query) => $query->where('type', $type))
-            ->paginate(10);
+            ->paginate($perPage ?? 10);
     }
 
     public function findById($id)

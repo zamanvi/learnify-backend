@@ -30,10 +30,13 @@ class LessonController extends Controller
     /**
      * Show the form for creating a new resource.
      */
-    public function chapters_lessons_create($id)
+    public function chapters_lessons_create(Request $request, $id)
     {
-        $lessons = $this->lessonRepository->getAllById($id);
         $clientType = get_client_type() ?? 'web';
+        // Optional ?per_page= is honoured for the app only (default page
+        // size is unchanged); the admin view keeps its own paging.
+        $perPage = $clientType === 'app' ? $this->requestedPerPage($request) : null;
+        $lessons = $this->lessonRepository->getAllById($id, $perPage);
         if ($clientType === 'app') {
             return ApiResponse::respond(['lessons' => $lessons], true, 'All lessons', Response::HTTP_OK);
         }else{

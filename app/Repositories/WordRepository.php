@@ -17,12 +17,12 @@ class WordRepository  implements WordRepositoryInterface
     {
         return $this->word->paginate(10);
     }
-    public function getAllById($id)
+    public function getAllById($id, ?int $perPage = null)
     {
         // lesson_id is already on the word row; the app never reads the
         // nested lesson relation, so eager-loading it just duplicates the
         // same Lesson JSON object across every one of the 30 rows per page.
-        return $this->word->where('lesson_id', $id)->paginate(30);
+        return $this->word->where('lesson_id', $id)->paginate($perPage ?? 30);
     }
 
     public function findById($id)
