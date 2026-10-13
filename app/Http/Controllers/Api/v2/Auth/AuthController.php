@@ -177,7 +177,7 @@ class AuthController extends Controller
 
         $random  = rand(100000, 999999);
         $content = [
-            'subject' => 'Master English Book — Password Reset OTP',
+            'subject' => 'English grammar book in BD — Password Reset OTP',
             'name'    => $user->name,
             'otp'     => $random,
         ];
@@ -194,7 +194,14 @@ class AuthController extends Controller
 
             return $this->apiResponse(['email' => $email], true, 'OTP পাঠানো হয়েছে। Email চেক করো।', AppResponse::HTTP_OK);
         } catch (\Exception $e) {
-            return $this->apiResponse('', false, 'Email পাঠাতে ব্যর্থ: ' . $e->getMessage(), AppResponse::HTTP_NOT_ACCEPTABLE);
+            // Keep the SMTP/driver details in our logs, not in the response -
+            // the app shows this message to the user as-is.
+            \Illuminate\Support\Facades\Log::error('forget-password: could not send OTP email', [
+                'email'     => $email,
+                'exception' => get_class($e),
+                'message'   => $e->getMessage(),
+            ]);
+            return $this->apiResponse('', false, 'Email পাঠানো যায়নি। কিছুক্ষণ পরে আবার চেষ্টা করো।', AppResponse::HTTP_NOT_ACCEPTABLE);
         }
     }
     const OTP_VALID_MINUTES = 10;

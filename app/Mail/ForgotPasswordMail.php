@@ -35,8 +35,12 @@ class ForgotPasswordMail extends Mailable
      */
     public function envelope()
     {
+        // envelope() is applied after build() and wins over ->subject(), so
+        // the subject must come from here: it used to be the hard-coded
+        // "Forgot Password OPT" (typo), which hid the subject passed in
+        // $content['subject'] by AuthController.
         return new Envelope(
-            subject: 'Forgot Password OPT',
+            subject: $this->content['subject'] ?? 'Password Reset OTP',
         );
     }
 
