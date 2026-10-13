@@ -35,6 +35,12 @@
                                 </select>
                             </div>
                             <div class="form-group">
+                                <label for="exam_tags">Exam tags <small class="text-muted">(optional, comma separated)</small></label>
+                                <input type="text" name="exam_tags" class="form-control" id="exam_tags" maxlength="255"
+                                    placeholder="hsc, ssc, jsc, bcs, bank, medical, admission_job">
+                                <small class="form-text text-muted">Leave empty for content every student should see.</small>
+                            </div>
+                            <div class="form-group">
                                 <label for="image_path">Chapter Image</label>
                                 <div class="custom-file">
                                     <input type="file" class="custom-file-input" id="image_path">

@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class Chapter extends Model
 {
     use HasFactory;
-    protected $fillable = ['title', 'type', 'image_path', 'status'];
+    protected $fillable = ['title', 'type', 'exam_tags', 'image_path', 'status'];
 
     protected $casts = ['status' => 'bool'];
 
