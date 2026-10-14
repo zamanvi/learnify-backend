@@ -16,6 +16,7 @@ class Group extends Model
     public function members()
     {
         return $this->belongsToMany(User::class, 'group_members', 'group_id', 'user_id')
+                    ->withPivot('points_at_join')
                     ->withTimestamps();
     }
 }
