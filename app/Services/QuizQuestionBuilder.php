@@ -219,7 +219,45 @@ class QuizQuestionBuilder
         return $bnToEnQuestions->concat($enToBnQuestions)->values()->toArray();
     }
 
-    // Round 3 (Picture) - shows the word's image, user picks the matching
+    // Round 3 (Match pairs) - 10 English words and their Bangla meanings
+    // (two boards of 5 on the client). Needs nothing but word + meaning, so it
+    // works for every lesson. Words whose meaning (or spelling) repeats inside
+    // the set are skipped: two identical cards would make a pair ambiguous.
+    // Returns 10 pairs, or 5 when the lesson only has that many, else [].
+    public function buildMatchQuestions(?int $userId, int $lessonId, int $count = 10): array
+    {
+        $wordIds = $this->selectWordIdsForUser($userId, $lessonId, $count + 8);
+        if (empty($wordIds)) {
+            return [];
+        }
+
+        $byId = Word::whereIn('id', $wordIds)->get()->keyBy('id');
+        $seenWords = [];
+        $seenMeanings = [];
+        $pairs = [];
+        foreach ($wordIds as $id) {
+            $w = $byId->get($id);
+            if (!$w) {
+                continue;
+            }
+            $word = trim((string) $w->word);
+            $meaning = trim((string) $w->meaning);
+            $kw = mb_strtolower($word);
+            $km = mb_strtolower($meaning);
+            if ($word === '' || $meaning === '' || isset($seenWords[$kw]) || isset($seenMeanings[$km])) {
+                continue;
+            }
+            $seenWords[$kw] = true;
+            $seenMeanings[$km] = true;
+            $pairs[] = ['word_id' => $w->id, 'word' => $word, 'meaning' => $meaning];
+        }
+
+        $take = count($pairs) >= $count ? $count : (count($pairs) >= 5 ? 5 : 0);
+        return $take === 0 ? [] : array_slice($pairs, 0, $take);
+    }
+
+    // (Superseded by buildMatchQuestions - kept for reference, not routed.)
+    // Picture round - shows the word's image, user picks the matching
     // English word among 4 options (complements Round 1, which goes
     // word -> meaning; this goes picture -> word). Only words that already
     // have an uploaded image are eligible - if a lesson has fewer than 4

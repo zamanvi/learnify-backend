@@ -86,16 +86,31 @@ class GameController extends Controller
     //   clients, "?v=2"): 1 MCQ, 2 Reading, 3 Picture, 4 Listening, 5 Writing.
     //   legacy clients (Play Store 1.1.7, no "v" parameter) number the rounds
     //   1 MCQ, 2 Reading, 3 Listening, 4 Writing - translated both ways here.
-    // Picture (3) needs word images and none are uploaded yet, so it is
-    // switched off: it is reported as "soon" and the unlock chain skips it
-    // (2 -> 4). Empty DISABLED_ROUNDS to switch it back on.
+    // Round 3 is "Match pairs" (match 10 English words with their Bangla
+    // meanings). Only clients that can play it say so with "?v=3"; older
+    // ones (legacy, "?v=2") get it reported as "soon" and the unlock chain
+    // skips it (2 -> 4), exactly like the switched-off Picture round did.
+    // The old image-based Picture builder is no longer used.
     // ------------------------------------------------------------------
-    private const DISABLED_ROUNDS = [3];
+    private const MATCH_ROUND = 3;
+    private const MATCH_MIN_CLIENT = 3;
     private const LEGACY_ROUND_MAP = [1 => 1, 2 => 2, 3 => 4, 4 => 5];
 
+    private function clientVersion(Request $request): int
+    {
+        return (int) $request->query('v', $request->input('v', 0));
+    }
+
+    // 5-slot numbering (v >= 2); anything older is the legacy 4-round numbering
     private function isCurrentClient(Request $request): bool
     {
-        return (string) $request->query('v', $request->input('v', '')) === '2';
+        return $this->clientVersion($request) >= 2;
+    }
+
+    // rounds this client can not play yet
+    private function disabledRounds(Request $request): array
+    {
+        return $this->clientVersion($request) >= self::MATCH_MIN_CLIENT ? [] : [self::MATCH_ROUND];
     }
 
     // client round number -> canonical round, or null when out of range
@@ -107,20 +122,20 @@ class GameController extends Controller
         return self::LEGACY_ROUND_MAP[$round] ?? null;
     }
 
-    private function nextEnabledRound(int $round): ?int
+    private function nextEnabledRound(int $round, array $disabled): ?int
     {
         for ($n = $round + 1; $n <= 5; $n++) {
-            if (!in_array($n, self::DISABLED_ROUNDS, true)) {
+            if (!in_array($n, $disabled, true)) {
                 return $n;
             }
         }
         return null;
     }
 
-    private function previousEnabledRound(int $round): ?int
+    private function previousEnabledRound(int $round, array $disabled): ?int
     {
         for ($n = $round - 1; $n >= 1; $n--) {
-            if (!in_array($n, self::DISABLED_ROUNDS, true)) {
+            if (!in_array($n, $disabled, true)) {
                 return $n;
             }
         }
@@ -130,9 +145,9 @@ class GameController extends Controller
     // Players who cleared the round before a switched-off one (e.g. Round 2)
     // may have no usable row for the one after it (Round 4 stays "locked"
     // while Round 3 sat "unlocked" forever). Opens it for them - idempotent.
-    private function healRoundUnlocks(int $userId, int $lessonId): void
+    private function healRoundUnlocks(int $userId, int $lessonId, array $disabled): void
     {
-        DB::transaction(function () use ($userId, $lessonId) {
+        DB::transaction(function () use ($userId, $lessonId, $disabled) {
             $rows = UserLessonRoundProgress::where('user_id', $userId)
                 ->where('lesson_id', $lessonId)
                 ->lockForUpdate()
@@ -140,10 +155,10 @@ class GameController extends Controller
                 ->keyBy('round_number');
 
             for ($n = 2; $n <= 5; $n++) {
-                if (in_array($n, self::DISABLED_ROUNDS, true)) {
+                if (in_array($n, $disabled, true)) {
                     continue;
                 }
-                $prev = $this->previousEnabledRound($n);
+                $prev = $this->previousEnabledRound($n, $disabled);
                 if ($prev === null || ($rows->get($prev)->status ?? null) !== 'passed') {
                     continue;
                 }
@@ -234,7 +249,8 @@ class GameController extends Controller
         if ($round === null) {
             return response()->json(['status' => 'error', 'message' => 'Invalid round'], 422);
         }
-        if (in_array($round, self::DISABLED_ROUNDS, true)) {
+        $disabled = $this->disabledRounds($request);
+        if (in_array($round, $disabled, true)) {
             return response()->json(['status' => 'error', 'message' => 'এই রাউন্ড শীঘ্রই আসছে'], 404);
         }
 
@@ -260,7 +276,7 @@ class GameController extends Controller
             if (!$user) {
                 return response()->json(['status' => 'error', 'message' => 'লগইন করো আগে'], 401);
             }
-            $this->healRoundUnlocks($user->id, (int) $lesson_id);
+            $this->healRoundUnlocks($user->id, (int) $lesson_id, $disabled);
             $progress = UserLessonRoundProgress::where('user_id', $user->id)
                 ->where('lesson_id', $lesson_id)
                 ->where('round_number', $round)
@@ -273,7 +289,7 @@ class GameController extends Controller
         $questions = match ($round) {
             1 => $builder->buildQuestionsFromWordIds($builder->selectWordIdsForUser($user?->id, $lesson_id, 10)),
             2 => $builder->buildReadingQuestions($user?->id, $lesson_id, 12),
-            3 => $builder->buildPictureQuestions($user?->id, $lesson_id, 10),
+            3 => $builder->buildMatchQuestions($user?->id, $lesson_id, 10),
             4 => $builder->buildListeningQuestions($user?->id, $lesson_id, 10),
             5 => $builder->buildWritingQuestions($user?->id, $lesson_id, 10),
         };
@@ -319,7 +335,8 @@ class GameController extends Controller
             }
         }
 
-        $this->healRoundUnlocks($user->id, (int) $lesson_id);
+        $disabled = $this->disabledRounds($request);
+        $this->healRoundUnlocks($user->id, (int) $lesson_id, $disabled);
 
         $rows = DB::transaction(function () use ($user, $lesson_id) {
             $existing = UserLessonRoundProgress::where('user_id', $user->id)
@@ -334,8 +351,8 @@ class GameController extends Controller
             return $existing;
         });
 
-        $entry = function (int $n) use ($rows) {
-            if (in_array($n, self::DISABLED_ROUNDS, true)) {
+        $entry = function (int $n) use ($rows, $disabled) {
+            if (in_array($n, $disabled, true)) {
                 return ['status' => 'soon', 'stars' => 0];
             }
             $row = $rows->get($n);
@@ -379,13 +396,14 @@ class GameController extends Controller
 
         $user   = Auth::user();
         $round  = $this->toCanonicalRound($request, (int) $request->round);
-        if ($round === null || in_array($round, self::DISABLED_ROUNDS, true)) {
+        $disabled = $this->disabledRounds($request);
+        if ($round === null || in_array($round, $disabled, true)) {
             return response()->json(['status' => 'error', 'message' => 'অবৈধ রাউন্ড'], 422);
         }
         $passed = $request->hearts_lost < 3;
-        $this->healRoundUnlocks($user->id, (int) $request->lesson_id);
+        $this->healRoundUnlocks($user->id, (int) $request->lesson_id, $disabled);
 
-        $result = DB::transaction(function () use ($user, $request, $round, $passed) {
+        $result = DB::transaction(function () use ($user, $request, $round, $passed, $disabled) {
             $progress = $this->getOrCreateRoundProgressLocked(
                 $user->id, $request->lesson_id, $round, $round === 1 ? 'unlocked' : 'locked'
             );
@@ -423,7 +441,7 @@ class GameController extends Controller
                 $liptoEarned = $this->grantLiptoWithDailyCap($user, $mysteryBox['lipto'], "Round {$round} mystery box ({$mysteryBox['tier']})");
                 $mysteryBox['lipto'] = $liptoEarned; // reflect what was actually granted (may be capped)
 
-                $next = $this->nextEnabledRound($round);
+                $next = $this->nextEnabledRound($round, $disabled);
                 if ($next !== null) {
                     $nextRound = $this->getOrCreateRoundProgressLocked(
                         $user->id, $request->lesson_id, $next, 'locked'
