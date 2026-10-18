@@ -490,7 +490,12 @@ class BattleController extends Controller
     {
         $user = $request->user();
 
-        $battles = Battle::where('status', 'completed')
+        // Finished battles, plus battles I have already played that are still
+        // waiting for other players (so the creator of an open battle can see it).
+        $battles = Battle::where(function ($q) use ($user) {
+                $q->where('status', 'completed')
+                  ->orWhereHas('battle_participants', fn($q2) => $q2->where('user_id', $user->id)->where('status', 'submitted'));
+            })
             ->where(function ($q) use ($user) {
                 $q->where('challenger_id', $user->id)
                   ->orWhere('opponent_id', $user->id)
@@ -566,7 +571,12 @@ class BattleController extends Controller
             }
             $participant->save();
 
-            $allSubmitted = $battle->battle_participants()->where('status', '!=', 'submitted')->doesntExist();
+            // At least two players are needed to finish a battle: the creator of
+            // an open (code-join) battle finishing alone used to end it at once
+            // with a "win" over nobody. It now stays open for joiners.
+            $enough       = $battle->battle_participants()->count() >= 2;
+            $allSubmitted = $enough
+                && $battle->battle_participants()->where('status', '!=', 'submitted')->doesntExist();
             if ($allSubmitted) {
                 $battle->status    = 'completed';
                 $battle->winner_id = $this->determineWinnerN($battle);
@@ -637,6 +647,7 @@ class BattleController extends Controller
         return [
             'id'         => $battle->id,
             'lesson_id'  => $battle->lesson_id,
+            'lesson_title' => $this->lessonTitle($battle->lesson_id),
             'status'     => $battle->status,
             'result'     => $result,
             'my_score'   => $myScore,
@@ -669,6 +680,7 @@ class BattleController extends Controller
         return [
             'id'              => $battle->id,
             'lesson_id'       => $battle->lesson_id,
+            'lesson_title'    => $this->lessonTitle($battle->lesson_id),
             'status'          => $battle->status,
             'mode'            => $battle->mode,
             'question_count'  => $battle->question_count,
@@ -689,6 +701,19 @@ class BattleController extends Controller
                 'is_creator'      => $p->is_creator,
             ])->values(),
         ];
+    }
+
+    // Lesson name for the battle lists, looked up once per lesson per request.
+    private function lessonTitle(?int $lessonId): ?string
+    {
+        static $cache = [];
+        if (!$lessonId) {
+            return null;
+        }
+        if (!array_key_exists($lessonId, $cache)) {
+            $cache[$lessonId] = Lesson::where('id', $lessonId)->value('title');
+        }
+        return $cache[$lessonId];
     }
 
     private function formatUser(?User $user): ?array
